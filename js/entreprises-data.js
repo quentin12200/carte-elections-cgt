@@ -171,50 +171,51 @@ function processCSVData(csvText) {
                 'N°PV': rowData['N°PV'],
                 'Date': rowData['Date'],
                 'Coll': rowData['Coll'],
-                'Inscrits': parseInt(rowData['Inscrits'] || 0),
-                'Votants': parseInt(rowData['Votants'] || 0),
-                'sve_total': parseInt(rowData['sve_total'] || 0),
-                'CGT': parseInt(rowData['CGT'] || 0),
-                'CFDT': parseInt(rowData['CFDT'] || 0),
-                'CGT-FO': parseInt(rowData['CGT-FO'] || 0),
-                'CFTC': parseInt(rowData['CFTC'] || 0),
-                'CFE-CGC': parseInt(rowData['CFE-CGC'] || 0),
-                'SOLIDAIRES': parseInt(rowData['SOLIDAIRES'] || 0),
-                'UNSA': parseInt(rowData['UNSA'] || 0),
-                'AUTRES': parseInt(rowData['AUTRES'] || 0)
+                'Inscrits': Number(rowData['Inscrits'] || 0),
+                'Votants': Number(rowData['Votants'] || 0),
+                'sve_total': Number(rowData['sve_total'] || 0),
+                'CGT': Number(rowData['CGT'] || 0),
+                'CFDT': Number(rowData['CFDT'] || 0),
+                'CGT-FO': Number(rowData['CGT-FO'] || 0),
+                'CFTC': Number(rowData['CFTC'] || 0),
+                'CFE-CGC': Number(rowData['CFE-CGC'] || 0),
+                'SOLIDAIRES': Number(rowData['SOLIDAIRES'] || 0),
+                'UNSA': Number(rowData['UNSA'] || 0),
+                'AUTRES': Number(rowData['AUTRES'] || 0)
             });
             
             // Convertir les valeurs en nombres pour éviter les problèmes de calcul
             // Utiliser Number() au lieu de parseInt() pour éviter les problèmes de conversion
-            const inscrits = Number(rowData['Inscrits'] || 0);
-            const votants = Number(rowData['Votants'] || 0);
-            const sve = Number(rowData['sve_total'] || 0);
-            const cgt = Number(rowData['CGT'] || 0);
-            const cfdt = Number(rowData['CFDT'] || 0);
-            const cgtfo = Number(rowData['CGT-FO'] || 0);
-            const cftc = Number(rowData['CFTC'] || 0);
-            const cfecgc = Number(rowData['CFE-CGC'] || 0);
-            const solidaires = Number(rowData['SOLIDAIRES'] || 0);
-            const unsa = Number(rowData['UNSA'] || 0);
-            const autres = Number(rowData['AUTRES'] || 0);
+            // Remplacer les valeurs non numériques par 0
+            const inscrits = Number(rowData['Inscrits']) || 0;
+            const votants = Number(rowData['Votants']) || 0;
+            const sve = Number(rowData['sve_total']) || 0;
+            const cgt = Number(rowData['CGT']) || 0;
+            const cfdt = Number(rowData['CFDT']) || 0;
+            const cgtfo = Number(rowData['CGT-FO']) || 0;
+            const cftc = Number(rowData['CFTC']) || 0;
+            const cfecgc = Number(rowData['CFE-CGC']) || 0;
+            const solidaires = Number(rowData['SOLIDAIRES']) || 0;
+            const unsa = Number(rowData['UNSA']) || 0;
+            const autres = Number(rowData['AUTRES']) || 0;
             
             // Vérifier que les valeurs sont des nombres valides
             if (isNaN(inscrits) || isNaN(votants) || isNaN(sve)) {
                 console.warn('Valeurs numériques invalides pour le PV:', rowData['NumPV'], 'SIRET:', siret);
             }
             
-            // Additionner les valeurs numériques pour l'entreprise
-            entreprisesBySiret[siret].Inscrits += inscrits;
-            entreprisesBySiret[siret].Votants += votants;
-            entreprisesBySiret[siret].sve_total += sve;
-            entreprisesBySiret[siret].CGT += cgt;
-            entreprisesBySiret[siret].CFDT += cfdt;
-            entreprisesBySiret[siret]['CGT-FO'] += cgtfo;
-            entreprisesBySiret[siret].CFTC += cftc;
-            entreprisesBySiret[siret]['CFE-CGC'] += cfecgc;
-            entreprisesBySiret[siret].SOLIDAIRES += solidaires;
-            entreprisesBySiret[siret].UNSA += unsa;
-            entreprisesBySiret[siret].AUTRES += autres;
+            // Additionner les valeurs numériques pour l'entreprise seulement si elles sont valides
+            if (!isNaN(inscrits)) entreprisesBySiret[siret].Inscrits += inscrits;
+            if (!isNaN(votants)) entreprisesBySiret[siret].Votants += votants;
+            if (!isNaN(sve)) entreprisesBySiret[siret].sve_total += sve;
+            if (!isNaN(cgt)) entreprisesBySiret[siret].CGT += cgt;
+            if (!isNaN(cfdt)) entreprisesBySiret[siret].CFDT += cfdt;
+            if (!isNaN(cgtfo)) entreprisesBySiret[siret]['CGT-FO'] += cgtfo;
+            if (!isNaN(cftc)) entreprisesBySiret[siret].CFTC += cftc;
+            if (!isNaN(cfecgc)) entreprisesBySiret[siret]['CFE-CGC'] += cfecgc;
+            if (!isNaN(solidaires)) entreprisesBySiret[siret].SOLIDAIRES += solidaires;
+            if (!isNaN(unsa)) entreprisesBySiret[siret].UNSA += unsa;
+            if (!isNaN(autres)) entreprisesBySiret[siret].AUTRES += autres;
         }
     }
     
@@ -223,24 +224,22 @@ function processCSVData(csvText) {
     
     console.log('Nombre total d\'entreprises (SIRET uniques):', data.length);
     
-    // Vérifier les totaux
+    // Calculer les totaux avec vérification des valeurs
     let totalInscrits = 0;
     let totalVotants = 0;
-    let totalSve = 0;
+    let totalSVE = 0;
     let totalCGT = 0;
     
-    // Utiliser une boucle for classique pour éviter les problèmes de référence
-    for (let i = 0; i < data.length; i++) {
-        const e = data[i];
-        // S'assurer que les valeurs sont des nombres
-        if (!isNaN(e.Inscrits)) totalInscrits += Number(e.Inscrits);
-        if (!isNaN(e.Votants)) totalVotants += Number(e.Votants);
-        if (!isNaN(e.sve_total)) totalSve += Number(e.sve_total);
-        if (!isNaN(e.CGT)) totalCGT += Number(e.CGT);
-    }
+    data.forEach(item => {
+        // Vérifier que les valeurs sont des nombres valides avant de les ajouter
+        if (!isNaN(item.Inscrits)) totalInscrits += Number(item.Inscrits);
+        if (!isNaN(item.Votants)) totalVotants += Number(item.Votants);
+        if (!isNaN(item.sve_total)) totalSVE += Number(item.sve_total);
+        if (!isNaN(item.CGT)) totalCGT += Number(item.CGT);
+    });
     
     console.log('Total inscrits:', totalInscrits, 'Total votants:', totalVotants);
-    console.log('Total SVE:', totalSve, 'Total CGT:', totalCGT);
+    console.log('Total SVE:', totalSVE, 'Total CGT:', totalCGT);
     
     // Calculer les champs dérivés pour chaque entreprise
     data.forEach(entreprise => {
