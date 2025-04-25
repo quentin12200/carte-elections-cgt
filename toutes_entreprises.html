@@ -54,6 +54,31 @@
         .badge-autres { background-color: #aaaaaa; }
         .badge { color: white; }
         .dataTables_wrapper .paginate_button:hover { background: #e63946; color: white !important; border-color: #e63946; }
+        
+        /* Styles pour l'affichage des scores et pourcentages */
+        .score-cell {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            line-height: 1.2;
+        }
+        .score-value {
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+        .score-percent {
+            font-size: 0.9em;
+            color: #666;
+            background-color: #f8f9fa;
+            border-radius: 3px;
+            padding: 1px 4px;
+            margin-top: 2px;
+        }
+        .high-percent {
+            color: white;
+            background-color: #e63946;
+            font-weight: bold;
+        }
         /* Loader - Barre de progression */
         .loader-container { 
             display: flex; 

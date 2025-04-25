@@ -322,17 +322,105 @@ function initDataTable() {
             },
             { data: 'Raison sociale' },
             { data: 'SIRET' },
-            { data: 'Inscrits', render: d => d ? parseInt(d).toLocaleString() : '0' },
-            { data: 'Votants', render: d => d ? parseInt(d).toLocaleString() : '0' },
-            { data: 'sve_total', render: d => d ? parseInt(d).toLocaleString() : '0' },
-            { data: 'CGT', render: (d, t, r) => t === 'display' ? `${(parseInt(d) || 0).toLocaleString()} (${r.pourcentageCGT}%)` : d },
-            { data: 'CFDT', render: (d, t, r) => t === 'display' ? `${(parseInt(d) || 0).toLocaleString()} (${(r.sve_total > 0 ? (parseInt(d) / parseInt(r.sve_total) * 100).toFixed(2) : '0.00')}%)` : d },
-            { data: 'CGT-FO', render: (d, t, r) => t === 'display' ? `${(parseInt(d) || 0).toLocaleString()} (${(parseInt(r.sve_total) > 0 ? (parseInt(d) / parseInt(r.sve_total) * 100).toFixed(2) : '0.00')}%)` : d },
-            { data: 'CFTC', render: (d, t, r) => t === 'display' ? `${(parseInt(d) || 0).toLocaleString()} (${(parseInt(r.sve_total) > 0 ? (parseInt(d) / parseInt(r.sve_total) * 100).toFixed(2) : '0.00')}%)` : d },
-            { data: 'CFE-CGC', render: (d, t, r) => t === 'display' ? `${(parseInt(d) || 0).toLocaleString()} (${(parseInt(r.sve_total) > 0 ? (parseInt(d) / parseInt(r.sve_total) * 100).toFixed(2) : '0.00')}%)` : d },
-            { data: 'SOLIDAIRES', render: (d, t, r) => t === 'display' ? `${(parseInt(d) || 0).toLocaleString()} (${(parseInt(r.sve_total) > 0 ? (parseInt(d) / parseInt(r.sve_total) * 100).toFixed(2) : '0.00')}%)` : d },
-            { data: 'UNSA', render: (d, t, r) => t === 'display' ? `${(parseInt(d) || 0).toLocaleString()} (${(parseInt(r.sve_total) > 0 ? (parseInt(d) / parseInt(r.sve_total) * 100).toFixed(2) : '0.00')}%)` : d },
-            { data: 'AUTRES', render: (d, t, r) => t === 'display' ? `${(parseInt(d) || 0).toLocaleString()} (${(parseInt(r.sve_total) > 0 ? (parseInt(d) / parseInt(r.sve_total) * 100).toFixed(2) : '0.00')}%)` : d },
+            { data: 'Inscrits', render: d => d ? safeNumber(d).toLocaleString() : '0' },
+            { data: 'Votants', render: d => d ? safeNumber(d).toLocaleString() : '0' },
+            { data: 'sve_total', render: d => d ? safeNumber(d).toLocaleString() : '0' },
+            { 
+                data: 'CGT', 
+                render: (d, t, r) => {
+                    if (t !== 'display') return d;
+                    const val = safeNumber(d);
+                    const pct = r.pourcentageCGT;
+                    return `<div class="score-cell">
+                              <div class="score-value">${val.toLocaleString()}</div>
+                              <div class="score-percent ${pct > 20 ? 'high-percent' : ''}">${pct}%</div>
+                            </div>`;
+                }
+            },
+            { 
+                data: 'CFDT', 
+                render: (d, t, r) => {
+                    if (t !== 'display') return d;
+                    const val = safeNumber(d);
+                    const pct = r.sve_total > 0 ? (val / safeNumber(r.sve_total) * 100).toFixed(2) : '0.00';
+                    return `<div class="score-cell">
+                              <div class="score-value">${val.toLocaleString()}</div>
+                              <div class="score-percent ${pct > 20 ? 'high-percent' : ''}">${pct}%</div>
+                            </div>`;
+                }
+            },
+            { 
+                data: 'CGT-FO', 
+                render: (d, t, r) => {
+                    if (t !== 'display') return d;
+                    const val = safeNumber(d);
+                    const pct = r.sve_total > 0 ? (val / safeNumber(r.sve_total) * 100).toFixed(2) : '0.00';
+                    return `<div class="score-cell">
+                              <div class="score-value">${val.toLocaleString()}</div>
+                              <div class="score-percent ${pct > 20 ? 'high-percent' : ''}">${pct}%</div>
+                            </div>`;
+                }
+            },
+            { 
+                data: 'CFTC', 
+                render: (d, t, r) => {
+                    if (t !== 'display') return d;
+                    const val = safeNumber(d);
+                    const pct = r.sve_total > 0 ? (val / safeNumber(r.sve_total) * 100).toFixed(2) : '0.00';
+                    return `<div class="score-cell">
+                              <div class="score-value">${val.toLocaleString()}</div>
+                              <div class="score-percent ${pct > 20 ? 'high-percent' : ''}">${pct}%</div>
+                            </div>`;
+                }
+            },
+            { 
+                data: 'CFE-CGC', 
+                render: (d, t, r) => {
+                    if (t !== 'display') return d;
+                    const val = safeNumber(d);
+                    const pct = r.sve_total > 0 ? (val / safeNumber(r.sve_total) * 100).toFixed(2) : '0.00';
+                    return `<div class="score-cell">
+                              <div class="score-value">${val.toLocaleString()}</div>
+                              <div class="score-percent ${pct > 20 ? 'high-percent' : ''}">${pct}%</div>
+                            </div>`;
+                }
+            },
+            { 
+                data: 'SOLIDAIRES', 
+                render: (d, t, r) => {
+                    if (t !== 'display') return d;
+                    const val = safeNumber(d);
+                    const pct = r.sve_total > 0 ? (val / safeNumber(r.sve_total) * 100).toFixed(2) : '0.00';
+                    return `<div class="score-cell">
+                              <div class="score-value">${val.toLocaleString()}</div>
+                              <div class="score-percent ${pct > 20 ? 'high-percent' : ''}">${pct}%</div>
+                            </div>`;
+                }
+            },
+            { 
+                data: 'UNSA', 
+                render: (d, t, r) => {
+                    if (t !== 'display') return d;
+                    const val = safeNumber(d);
+                    const pct = r.sve_total > 0 ? (val / safeNumber(r.sve_total) * 100).toFixed(2) : '0.00';
+                    return `<div class="score-cell">
+                              <div class="score-value">${val.toLocaleString()}</div>
+                              <div class="score-percent ${pct > 20 ? 'high-percent' : ''}">${pct}%</div>
+                            </div>`;
+                }
+            },
+            { 
+                data: 'AUTRES', 
+                render: (d, t, r) => {
+                    if (t !== 'display') return d;
+                    const val = safeNumber(d);
+                    const pct = r.sve_total > 0 ? (val / safeNumber(r.sve_total) * 100).toFixed(2) : '0.00';
+                    return `<div class="score-cell">
+                              <div class="score-value">${val.toLocaleString()}</div>
+                              <div class="score-percent ${pct > 20 ? 'high-percent' : ''}">${pct}%</div>
+                            </div>`;
+                }
+            },
             { data: 'syndicatDominant', render: d => d ? `<span class="badge badge-${d.toLowerCase().replace(/[^a-z]+/g, '')}">${d}</span>` : '' },
             { data: null, render: d => `<button class="btn btn-sm btn-primary view-details" data-dept="${d.deptCode || ''}" data-siret="${d.SIRET || ''}" title="Voir les ${d.nbPV || 0} PV de cette entreprise"><i class="fas fa-eye"></i> ${d.nbPV || 0} PV</button>` }
         ],
