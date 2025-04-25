@@ -149,10 +149,12 @@
                 return;
             }
             
-            // Charger les données du département
+            // Charger les données du département (CSE, TPE et AGRI)
             Promise.all([
                 fetch('json_data_ordonnees/resultats_departements.json'),
-                fetch(`json_data/departement_${codeDept}.json`)
+                fetch(`json_data/departement_${codeDept}.json`),
+                fetch('json_data/departement_TPE.json'),
+                fetch('json_data/departement_AGRI.json')
             ])
             .then(responses => {
                 // Vérifier si les réponses sont OK
@@ -162,13 +164,36 @@
                 if (!responses[1].ok) {
                     throw new Error(`Erreur lors du chargement des PV du département ${codeDept}: ${responses[1].status}`);
                 }
+                if (!responses[2].ok) {
+                    throw new Error(`Erreur lors du chargement des données TPE: ${responses[2].status}`);
+                }
+                if (!responses[3].ok) {
+                    throw new Error(`Erreur lors du chargement des données AGRI: ${responses[3].status}`);
+                }
                 
-                return Promise.all(responses.map(response => response.json()));
+                // Utiliser une fonction personnalisée pour parser le JSON et gérer les valeurs NaN
+                return Promise.all(responses.map(response => 
+                    response.text().then(text => {
+                        // Remplacer les valeurs NaN par null pour permettre le parsing JSON
+                        const validJsonText = text.replace(/: *NaN/g, ': null');
+                        try {
+                            return JSON.parse(validJsonText);
+                        } catch (e) {
+                            console.error('Erreur de parsing JSON:', e);
+                            console.error('Texte JSON problématique:', validJsonText.substring(0, 200) + '...');
+                            throw new Error(`Erreur de parsing JSON: ${e.message}`);
+                        }
+                    })
+                ));
             })
-            .then(([resultats, pvData]) => {
+            .then(([resultats, pvData, tpeData, agriData]) => {
                 // Stocker les résultats
                 resultatsParDepartement = resultats;
                 pvList = pvData;
+                
+                // Trouver les données TPE et AGRI pour ce département
+                const tpeInfo = tpeData.find(item => item.Département == codeDept);
+                const agriInfo = agriData.find(item => item.Département == codeDept);
                 
                 // Récupérer le nom du département
                 nomDept = resultatsParDepartement[codeDept]?.nom || `Département ${codeDept}`;
@@ -177,21 +202,27 @@
                 document.getElementById('page-title').textContent = `PV d'élections - ${nomDept} (${codeDept})`;
                 document.title = `PV d'élections - ${nomDept} (${codeDept})`;
                 
-                // Mettre à jour les statistiques du département dans l'en-tête
+                // Utiliser uniquement les données CSE comme demandé
                 const deptData = resultatsParDepartement[codeDept];
-                if (deptData) {
-                    const inscrits = Math.round(deptData.total_inscrits).toLocaleString();
-                    const votants = Math.round(deptData.total_votants).toLocaleString();
-                    const scrutins = deptData.total_scrutins;
-                    const tauxParticipation = deptData.total_inscrits > 0 ? (deptData.total_votants / deptData.total_inscrits * 100).toFixed(2) : 0;
-                    
-                    document.getElementById('dept-stats').innerHTML = `
-                        <strong>Scrutins:</strong> ${scrutins} | 
-                        <strong>Inscrits:</strong> ${inscrits} | 
-                        <strong>Votants:</strong> ${votants} | 
-                        <strong>Participation:</strong> ${tauxParticipation}%
-                    `;
-                }
+                let totalInscrits = deptData ? Math.round(deptData.total_inscrits) : 0;
+                let totalVotants = deptData ? Math.round(deptData.total_votants) : 0;
+                let totalScrutins = deptData ? deptData.total_scrutins : 0;
+                
+                // Calculer le taux de participation
+                const tauxParticipation = totalInscrits > 0 ? (totalVotants / totalInscrits * 100).toFixed(2) : 0;
+                
+                // Mettre à jour les statistiques du département dans l'en-tête
+                document.getElementById('dept-stats').innerHTML = `
+                    <strong>Scrutins:</strong> ${totalScrutins} | 
+                    <strong>Inscrits:</strong> ${totalInscrits.toLocaleString()} | 
+                    <strong>Votants:</strong> ${totalVotants.toLocaleString()} | 
+                    <strong>Participation:</strong> ${tauxParticipation}%
+                `;
+                
+                // Ajouter une indication des sources de données
+                document.getElementById('dept-stats').innerHTML += `
+                    <div class="small text-muted mt-1">Données uniquement des CSE</div>
+                `;
                 
                 // Générer les statistiques
                 generateStats();

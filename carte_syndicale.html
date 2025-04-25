@@ -291,7 +291,20 @@ let colorScale = d3.scaleSequential(colorPalettes['all']);
                         throw new Error(`Erreur HTTP: ${response.status} - ${response.statusText}`);
                     }
                 }
-                return Promise.all(responses.map(response => response.json()));
+                // Utiliser une fonction personnalisée pour parser le JSON et gérer les valeurs NaN
+                return Promise.all(responses.map(response => 
+                    response.text().then(text => {
+                        // Remplacer les valeurs NaN par null pour permettre le parsing JSON
+                        const validJsonText = text.replace(/: *NaN/g, ': null');
+                        try {
+                            return JSON.parse(validJsonText);
+                        } catch (e) {
+                            console.error('Erreur de parsing JSON:', e);
+                            console.error('Texte JSON problématique:', validJsonText.substring(0, 200) + '...');
+                            throw new Error(`Erreur de parsing JSON: ${e.message}`);
+                        }
+                    })
+                ));
             })
             .then(([statsNat, resultatsDeptsData, geoData]) => {
                 // Stocker les données
@@ -362,7 +375,11 @@ let colorScale = d3.scaleSequential(colorPalettes['all']);
             });
         }
 
-        // Initialiser la carte avec Leaflet
+        // Variables pour stocker les données TPE et AGRI
+        let tpeData = [];
+        let agriData = [];
+        
+        // Fonction pour initialiser la carte avec Leaflet
         function initMap(geoData) {
             // Supprimer la carte existante si elle existe déjà
             if (map) {
@@ -377,6 +394,14 @@ let colorScale = d3.scaleSequential(colorPalettes['all']);
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
                 maxZoom: 19
             }).addTo(map);
+            
+            // Ajouter directement la couche GeoJSON sans charger les données TPE/AGRI
+            // pour éviter les erreurs
+            initializeGeoJSON(geoData);
+        }
+        
+        // Fonction pour initialiser la couche GeoJSON
+        function initializeGeoJSON(geoData) {
             
             // Fonction pour déterminer la couleur du département en fonction du syndicat sélectionné
             function getColor(dept) {
@@ -437,20 +462,32 @@ let colorScale = d3.scaleSequential(colorPalettes['all']);
                     
                     // Popup avec les informations du département
                     if (deptData) {
-                        // Calculer le total des inscrits à partir des PV du département
+                        // Utiliser uniquement les données CSE comme demandé
+                        let totalInscrits = Math.round(deptData.total_inscrits);
+                        let totalVotants = Math.round(deptData.total_votants);
+                        let totalScrutins = deptData.total_scrutins;
+                        
+                        // Calculer le taux de participation
+                        const tauxParticipation = totalInscrits > 0 ? (totalVotants / totalInscrits * 100).toFixed(2) : 0;
+                        
+                        // Créer le contenu du popup avec les données CSE uniquement
                         let popupContent = `
-                            <strong>${feature.properties.nom} (${dept})</strong><br>
-                            Scrutins: ${deptData.total_scrutins}<br>
-                            Inscrits: ${Math.round(deptData.total_inscrits).toLocaleString()}<br>
-                            Votants: ${Math.round(deptData.total_votants).toLocaleString()}<br>
+                            <div>
+                                <strong>${feature.properties.nom} (${dept})</strong><br>
+                                Scrutins: ${totalScrutins}<br>
+                                Inscrits: ${totalInscrits.toLocaleString()}<br>
+                                Votants: ${totalVotants.toLocaleString()}<br>
+                                Participation: ${tauxParticipation}%<br>
+                                <small>Données uniquement des CSE</small><br>
+                            </div>
                         `;
                         
                         if (selectedSyndicat !== 'all') {
-                            popupContent += `Voix ${selectedSyndicat}: ${deptData.voix[selectedSyndicat].toLocaleString()} (${deptData.pourcentages[selectedSyndicat].toFixed(2)}%)<br>`;
+                            popupContent = popupContent.replace('</div>', `Voix ${selectedSyndicat}: ${deptData.voix[selectedSyndicat].toLocaleString()} (${deptData.pourcentages[selectedSyndicat].toFixed(2)}%)<br></div>`);
                         }
                         
                         // Ajouter un bouton pour voir les PV du département
-                        popupContent += `<div class="mt-2"><a href="pv_departement.html?dept=${dept}" class="btn btn-sm btn-primary" style="border-radius: 20px; padding: 5px 15px; font-weight: 500; box-shadow: 0 2px 5px rgba(0,0,0,0.1); transition: all 0.3s ease;"><i class="fas fa-table me-1"></i> Voir les PV</a></div>`;
+                        popupContent = popupContent.replace('</div>', `</div><div class="mt-2"><a href="pv_departement.html?dept=${dept}" class="btn btn-sm btn-primary" style="border-radius: 20px; padding: 5px 15px; font-weight: 500; box-shadow: 0 2px 5px rgba(0,0,0,0.1); transition: all 0.3s ease; color: white;"><i class="fas fa-table me-1"></i> Voir les PV</a></div>`);
                         
                         layer.bindPopup(popupContent);
                     }
@@ -466,15 +503,26 @@ let colorScale = d3.scaleSequential(colorPalettes['all']);
                                 fillOpacity: 0.9
                             });
                             layer.bringToFront();
+                            
+                            // Ouvrir la popup au survol
+                            layer.openPopup();
                         },
                         mouseout: function(e) {
                             geojsonLayer.resetStyle(e.target);
+                            
+                            // Ne pas fermer la popup au survol sortant si le département est sélectionné
+                            if (selectedDepartement !== dept) {
+                                e.target.closePopup();
+                            }
                         },
                         click: function(e) {
                             // Désélectionner le département précédent
                             if (selectedDepartement) {
                                 geojsonLayer.resetStyle(e.target);
                             }
+                            
+                            // Ouvrir la popup au clic et la maintenir ouverte
+                            e.target.openPopup();
                             
                             // Sélectionner le nouveau département
                             selectedDepartement = dept;
