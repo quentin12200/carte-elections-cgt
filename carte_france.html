@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carte des Élections Syndicales CGT</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+        }
+        #map {
+            height: 600px;
+            width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .info {
+            padding: 6px 8px;
+            font: 14px/16px Arial, Helvetica, sans-serif;
+            background: white;
+            background: rgba(255,255,255,0.8);
+            box-shadow: 0 0 15px rgba(0,0,0,0.2);
+            border-radius: 5px;
+        }
+        .info h4 {
+            margin: 0 0 5px;
+            color: #777;
+        }
+        .legend {
+            line-height: 18px;
+            color: #555;
+        }
+        .legend i {
+            width: 18px;
+            height: 18px;
+            float: left;
+            margin-right: 8px;
+            opacity: 0.7;
+        }
+        .highlight-section {
+            animation: highlight 3s;
+        }
+        @keyframes highlight {
+            0% { background-color: rgba(255, 255, 0, 0.3); }
+            100% { background-color: transparent; }
+        }
+        .card-stats {
+            transition: all 0.3s ease;
+        }
+        .card-stats:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="mb-4 text-center">Cartographie des Élections Syndicales CGT</h1>
+        
+        <div class="row mb-4">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Carte des résultats par département</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="syndicat-selector" class="btn-group mb-3">
+                            <button class="btn btn-outline-danger btn-selector active" data-syndicat="CGT">CGT</button>
+                            <button class="btn btn-outline-primary btn-selector" data-syndicat="CFDT">CFDT</button>
+                            <button class="btn btn-outline-warning btn-selector" data-syndicat="CGT-FO">CGT-FO</button>
+                            <button class="btn btn-outline-info btn-selector" data-syndicat="CFTC">CFTC</button>
+                            <button class="btn btn-outline-dark btn-selector" data-syndicat="CFE-CGC">CFE-CGC</button>
+                            <button class="btn btn-outline-success btn-selector" data-syndicat="SOLIDAIRES">SOLIDAIRES</button>
+                            <button class="btn btn-outline-secondary btn-selector" data-syndicat="UNSA">UNSA</button>
+                            <button class="btn btn-outline-dark btn-selector" data-syndicat="AUTRES">AUTRES</button>
+                        </div>
+                        <div id="map"></div>
+                        <div id="legend" class="mt-3"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card mb-3">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Statistiques nationales</h5>
+                    </div>
+                    <div class="card-body" id="national-stats">
+                        <div class="text-center">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Chargement...</span>
+                            </div>
+                            <p>Chargement des statistiques...</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Top 5 départements</h5>
+                    </div>
+                    <div class="card-body" id="top-departements">
+                        <div class="text-center">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Chargement...</span>
+                            </div>
+                            <p>Chargement du classement...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="alert alert-info">
+            <h5><i class="fas fa-info-circle"></i> Comment utiliser cette carte</h5>
+            <p>Cliquez sur un département pour voir les détails des PV d'élections professionnelles.</p>
+            <p>Utilisez les boutons au-dessus de la carte pour filtrer par organisation syndicale.</p>
+        </div>
+    </div>
+
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Variables globales
+        let map;
+        let departements;
+        let selectedSyndicat = 'CGT';
+        let selectedDepartement = null;
+        let resultatsParDepartement = {};
+        
+        // Palettes de couleurs par syndicat
+        const colorPalettes = {
+            'CGT': d3.interpolateReds,
+            'CFDT': d3.interpolateBlues,
+            'CGT-FO': d3.interpolateOranges,
+            'CFTC': d3.interpolatePurples,
+            'CFE-CGC': d3.interpolateGreys,
+            'SOLIDAIRES': d3.interpolateGreens,
+            'UNSA': d3.interpolateBuPu,
+            'AUTRES': d3.interpolateYlOrBr
+        };
+        
+        // Fonction pour charger les données
+        function loadData() {
+            Promise.all([
+                fetch('json_data_ordonnees/stats_regions.json'),
+                fetch('json_data_ordonnees/resultats_departements.json'),
+                fetch('assets/france-departements.json')
+            ])
+            .then(responses => Promise.all(responses.map(response => response.json())))
+            .then(([statsRegions, resultats, geoData]) => {
+                // Stocker les résultats par département
+                resultatsParDepartement = resultats;
+                
+                // Initialiser la carte
+                initMap(geoData);
+                
+                // Mettre à jour les statistiques nationales
+                updateNationalStats();
+                
+                // Mettre à jour le top 5 des départements
+                updateTopDepartements();
+            })
+            .catch(error => {
+                console.error('Erreur lors du chargement des données:', error);
+                document.getElementById('map').innerHTML = `
+                    <div class="alert alert-danger">
+                        <h4>Erreur de chargement</h4>
+                        <p>Impossible de charger les données de la carte.</p>
+                        <p>Détail: ${error.message}</p>
+                    </div>
+                `;
+            });
+        }
+        
+        // Initialiser la carte avec Leaflet
+        function initMap(geoData) {
+            // Créer la carte centrée sur la France
+            map = L.map('map', {
+                center: [46.603354, 1.888334],
+                zoom: 6,
+                minZoom: 5,
+                maxZoom: 9
+            });
+            
+            // Ajouter un fond de carte OpenStreetMap
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+            
+            // Fonction pour déterminer la couleur d'un département
+            function getColor(feature) {
+                const dept = feature.properties.code;
+                const deptData = resultatsParDepartement[dept];
+                
+                if (!deptData) return '#cccccc';
+                
+                // Calculer le pourcentage pour le syndicat sélectionné
+                const totalVoix = deptData.total_sve || 1; // Éviter division par zéro
+                const voixSyndicat = deptData[selectedSyndicat] || 0;
+                const pourcentage = (voixSyndicat / totalVoix) * 100;
+                
+                // Utiliser la palette de couleurs du syndicat sélectionné
+                return colorPalettes[selectedSyndicat](pourcentage / 100);
+            }
+            
+            // Ajouter les départements à la carte
+            const geojsonLayer = L.geoJSON(geoData, {
+                style: function(feature) {
+                    return {
+                        fillColor: getColor(feature),
+                        weight: 1,
+                        opacity: 1,
+                        color: 'white',
+                        dashArray: '3',
+                        fillOpacity: 0.7
+                    };
+                },
+                onEachFeature: function(feature, layer) {
+                    const dept = feature.properties.code;
+                    const deptData = resultatsParDepartement[dept];
+                    
+                    if (deptData) {
+                        // Créer le contenu du popup
+                        let popupContent = `
+                            <strong>${feature.properties.nom} (${dept})</strong><br>
+                            Scrutins: ${deptData.total_scrutins}<br>
+                            Inscrits: ${Math.round(deptData.total_inscrits).toLocaleString()}<br>
+                            Votants: ${Math.round(deptData.total_votants).toLocaleString()}<br>
+                        `;
+                        
+                        // Ajouter les résultats du syndicat sélectionné
+                        const totalVoix = deptData.total_sve || 1;
+                        const voixSyndicat = deptData[selectedSyndicat] || 0;
+                        const pourcentage = ((voixSyndicat / totalVoix) * 100).toFixed(2);
+                        
+                        popupContent += `
+                            <strong>${selectedSyndicat}:</strong> ${voixSyndicat.toLocaleString()} voix (${pourcentage}%)<br>
+                            <a href="pv_departement.html?dept=${dept}" class="btn btn-sm btn-primary mt-2">Voir les PV</a>
+                        `;
+                        
+                        // Ajouter le popup au département
+                        layer.bindPopup(popupContent);
+                        
+                        // Ajouter les événements de survol
+                        layer.on({
+                            mouseover: function(e) {
+                                layer.setStyle({
+                                    weight: 3,
+                                    color: '#666',
+                                    dashArray: '',
+                                    fillOpacity: 0.9
+                                });
+                                layer.bringToFront();
+                            },
+                            mouseout: function(e) {
+                                if (selectedDepartement !== dept) {
+                                    geojsonLayer.resetStyle(layer);
+                                }
+                            },
+                            click: function(e) {
+                                // Désélectionner le département précédent
+                                if (selectedDepartement) {
+                                    geojsonLayer.resetStyle(e.target);
+                                }
+                                
+                                // Sélectionner le nouveau département
+                                selectedDepartement = dept;
+                                
+                                // Rediriger vers la page des PV
+                                window.location.href = `pv_departement.html?dept=${dept}`;
+                            }
+                        });
+                    }
+                }
+            }).addTo(map);
+            
+            // Stocker la couche GeoJSON pour pouvoir y accéder plus tard
+            departements = geojsonLayer;
+            
+            // Mettre à jour la légende
+            updateLegend();
+        }
+        
+        // Mettre à jour la coloration de la carte
+        function updateMapColoring() {
+            if (!departements) return;
+            
+            departements.eachLayer(function(layer) {
+                const feature = layer.feature;
+                const dept = feature.properties.code;
+                const deptData = resultatsParDepartement[dept];
+                
+                if (deptData) {
+                    // Calculer le pourcentage pour le syndicat sélectionné
+                    const totalVoix = deptData.total_sve || 1;
+                    const voixSyndicat = deptData[selectedSyndicat] || 0;
+                    const pourcentage = (voixSyndicat / totalVoix) * 100;
+                    
+                    // Mettre à jour la couleur du département
+                    layer.setStyle({
+                        fillColor: colorPalettes[selectedSyndicat](pourcentage / 100)
+                    });
+                    
+                    // Mettre à jour le contenu du popup
+                    let popupContent = `
+                        <strong>${feature.properties.nom} (${dept})</strong><br>
+                        Scrutins: ${deptData.total_scrutins}<br>
+                        Inscrits: ${Math.round(deptData.total_inscrits).toLocaleString()}<br>
+                        Votants: ${Math.round(deptData.total_votants).toLocaleString()}<br>
+                    `;
+                    
+                    // Ajouter les résultats du syndicat sélectionné
+                    popupContent += `
+                        <strong>${selectedSyndicat}:</strong> ${voixSyndicat.toLocaleString()} voix (${(pourcentage).toFixed(2)}%)<br>
+                        <a href="pv_departement.html?dept=${dept}" class="btn btn-sm btn-primary mt-2">Voir les PV</a>
+                    `;
+                    
+                    // Mettre à jour le popup
+                    layer.bindPopup(popupContent);
+                }
+            });
+            
+            // Mettre à jour la légende
+            updateLegend();
+        }
+        
+        // Mettre à jour la légende
+        function updateLegend() {
+            const legend = document.getElementById('legend');
+            
+            // Créer les étapes de la légende
+            const steps = 5;
+            const values = [];
+            for (let i = 0; i <= steps; i++) {
+                values.push(i * (100 / steps));
+            }
+            
+            // Générer le HTML de la légende
+            let html = `
+                <div class="card">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0">Pourcentage de voix ${selectedSyndicat}</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="legend">
+            `;
+            
+            // Ajouter les étapes de couleur
+            for (let i = 0; i < values.length - 1; i++) {
+                const from = values[i];
+                const to = values[i + 1];
+                const color = colorPalettes[selectedSyndicat]((from + (to - from) / 2) / 100);
+                
+                html += `
+                    <div class="mb-1">
+                        <i style="background:${color}"></i>
+                        ${from.toFixed(0)}% &ndash; ${to.toFixed(0)}%
+                    </div>
+                `;
+            }
+            
+            html += `
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Mettre à jour la légende
+            legend.innerHTML = html;
+        }
+        
+        // Mettre à jour les statistiques nationales
+        function updateNationalStats() {
+            const container = document.getElementById('national-stats');
+            
+            // Calculer les totaux nationaux
+            let totalScrutins = 0;
+            let totalInscrits = 0;
+            let totalVotants = 0;
+            let totalSVE = 0;
+            let totalVoixSyndicats = {};
+            
+            // Initialiser les totaux par syndicat
+            Object.keys(colorPalettes).forEach(syndicat => {
+                totalVoixSyndicats[syndicat] = 0;
+            });
+            
+            // Calculer les totaux
+            Object.values(resultatsParDepartement).forEach(dept => {
+                totalScrutins += dept.total_scrutins || 0;
+                totalInscrits += dept.total_inscrits || 0;
+                totalVotants += dept.total_votants || 0;
+                totalSVE += dept.total_sve || 0;
+                
+                // Calculer les totaux par syndicat
+                Object.keys(colorPalettes).forEach(syndicat => {
+                    totalVoixSyndicats[syndicat] += dept[syndicat] || 0;
+                });
+            });
+            
+            // Calculer les pourcentages
+            const pourcentages = {};
+            Object.keys(colorPalettes).forEach(syndicat => {
+                pourcentages[syndicat] = totalSVE > 0 ? (totalVoixSyndicats[syndicat] / totalSVE * 100).toFixed(2) : 0;
+            });
+            
+            // Calculer le taux de participation
+            const tauxParticipation = totalInscrits > 0 ? (totalVotants / totalInscrits * 100).toFixed(2) : 0;
+            
+            // Générer le HTML
+            let html = `
+                <div class="text-center mb-3">
+                    <h2 class="display-4 text-primary">${tauxParticipation}%</h2>
+                    <p class="text-muted">Taux de participation</p>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-6">
+                        <div class="card card-stats bg-light">
+                            <div class="card-body text-center">
+                                <h3>${Math.round(totalInscrits).toLocaleString()}</h3>
+                                <p class="text-muted mb-0">Inscrits</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="card card-stats bg-light">
+                            <div class="card-body text-center">
+                                <h3>${Math.round(totalVotants).toLocaleString()}</h3>
+                                <p class="text-muted mb-0">Votants</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <h6 class="mb-3">Répartition des voix</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Syndicat</th>
+                                <th class="text-end">Voix</th>
+                                <th class="text-end">%</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            // Trier les syndicats par nombre de voix (décroissant)
+            const syndicatsSorted = Object.keys(colorPalettes).sort((a, b) => {
+                return totalVoixSyndicats[b] - totalVoixSyndicats[a];
+            });
+            
+            // Ajouter les lignes pour chaque syndicat
+            syndicatsSorted.forEach(syndicat => {
+                const voix = totalVoixSyndicats[syndicat];
+                const pourcentage = pourcentages[syndicat];
+                
+                html += `
+                    <tr>
+                        <td>${syndicat}</td>
+                        <td class="text-end">${Math.round(voix).toLocaleString()}</td>
+                        <td class="text-end">${pourcentage}%</td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="text-center mt-3">
+                    <small class="text-muted">Total scrutins: ${totalScrutins.toLocaleString()}</small>
+                </div>
+            `;
+            
+            // Mettre à jour le conteneur
+            container.innerHTML = html;
+            
+            console.log('Statistiques nationales calculées:', {
+                totalScrutins,
+                totalInscrits,
+                totalVotants,
+                totalSVE,
+                totalVoixSyndicats,
+                pourcentages
+            });
+        }
+        
+        // Mettre à jour le top 5 des départements
+        function updateTopDepartements() {
+            const container = document.getElementById('top-departements');
+            
+            // Calculer les pourcentages pour chaque département
+            const departementsPourcentages = [];
+            
+            Object.entries(resultatsParDepartement).forEach(([code, data]) => {
+                if (data.total_sve > 0 && data[selectedSyndicat] !== undefined) {
+                    const pourcentage = (data[selectedSyndicat] / data.total_sve * 100);
+                    
+                    departementsPourcentages.push({
+                        code,
+                        nom: data.nom,
+                        pourcentage,
+                        voix: data[selectedSyndicat],
+                        sve: data.total_sve
+                    });
+                }
+            });
+            
+            // Trier les départements par pourcentage (décroissant)
+            departementsPourcentages.sort((a, b) => b.pourcentage - a.pourcentage);
+            
+            // Prendre les 5 premiers
+            const top5 = departementsPourcentages.slice(0, 5);
+            
+            // Générer le HTML
+            let html = `
+                <h6 class="mb-3">Top 5 départements pour ${selectedSyndicat}</h6>
+                <div class="list-group">
+            `;
+            
+            // Ajouter les départements
+            top5.forEach((dept, index) => {
+                html += `
+                    <a href="pv_departement.html?dept=${dept.code}" class="list-group-item list-group-item-action">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="badge bg-primary rounded-pill me-2">${index + 1}</span>
+                                ${dept.nom} (${dept.code})
+                            </div>
+                            <span class="badge bg-success rounded-pill">${dept.pourcentage.toFixed(2)}%</span>
+                        </div>
+                        <small class="text-muted">${Math.round(dept.voix).toLocaleString()} voix sur ${Math.round(dept.sve).toLocaleString()} SVE</small>
+                    </a>
+                `;
+            });
+            
+            html += `
+                </div>
+            `;
+            
+            // Mettre à jour le conteneur
+            container.innerHTML = html;
+        }
+        
+        // Gestionnaire d'événements pour les sélecteurs
+        document.addEventListener('DOMContentLoaded', function() {
+            // Sélecteur de syndicat
+            document.querySelectorAll('#syndicat-selector .btn-selector').forEach(button => {
+                button.addEventListener('click', function() {
+                    // Mettre à jour le syndicat sélectionné
+                    selectedSyndicat = this.getAttribute('data-syndicat');
+                    
+                    // Mettre à jour les boutons
+                    document.querySelectorAll('#syndicat-selector .btn-selector').forEach(btn => {
+                        btn.classList.remove('active');
+                    });
+                    this.classList.add('active');
+                    
+                    // Mettre à jour la carte
+                    updateMapColoring();
+                    
+                    // Mettre à jour le top 5 des départements
+                    updateTopDepartements();
+                });
+            });
+            
+            // Charger les données
+            loadData();
+        });
+    </script>
+</body>
+</html>

@@ -11,6 +11,8 @@
     <style>
         body {
             padding: 20px;
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Arial, sans-serif;
         }
         .dept-card {
             margin-bottom: 15px;
@@ -493,6 +495,7 @@
                                 <div class="card-header">
                                     <div class="d-flex justify-content-between align-items-center">
                                         <span><i class="fas fa-map-marker-alt me-1"></i>${dept.code} - ${dept.nom}</span>
+                                        <a href="pv_departement.html?dept=${dept.code}" class="btn btn-sm btn-primary" style="border-radius: 20px; padding: 5px 15px; font-weight: 500; box-shadow: 0 2px 5px rgba(0,0,0,0.1); transition: all 0.3s ease;"><i class="fas fa-table me-1"></i> Voir les PV</a>
                                     </div>
                                 </div>
                                 <div class="card-body">
