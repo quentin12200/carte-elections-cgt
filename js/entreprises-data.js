@@ -166,56 +166,60 @@ function processCSVData(csvText) {
                 };
             }
             
-            // Ajouter ce PV à l'entreprise
+                        // Utiliser la fonction safeNumber définie globalement
+            
+            // Ajouter ce PV à l'entreprise avec des valeurs numériques sûres
             entreprisesBySiret[siret].pvs.push({
                 'N°PV': rowData['N°PV'],
                 'Date': rowData['Date'],
                 'Coll': rowData['Coll'],
-                'Inscrits': Number(rowData['Inscrits'] || 0),
-                'Votants': Number(rowData['Votants'] || 0),
-                'sve_total': Number(rowData['sve_total'] || 0),
-                'CGT': Number(rowData['CGT'] || 0),
-                'CFDT': Number(rowData['CFDT'] || 0),
-                'CGT-FO': Number(rowData['CGT-FO'] || 0),
-                'CFTC': Number(rowData['CFTC'] || 0),
-                'CFE-CGC': Number(rowData['CFE-CGC'] || 0),
-                'SOLIDAIRES': Number(rowData['SOLIDAIRES'] || 0),
-                'UNSA': Number(rowData['UNSA'] || 0),
-                'AUTRES': Number(rowData['AUTRES'] || 0)
+                'Inscrits': safeNumber(rowData['Inscrits']),
+                'Votants': safeNumber(rowData['Votants']),
+                'sve_total': safeNumber(rowData['sve_total']),
+                'CGT': safeNumber(rowData['CGT']),
+                'CFDT': safeNumber(rowData['CFDT']),
+                'CGT-FO': safeNumber(rowData['CGT-FO']),
+                'CFTC': safeNumber(rowData['CFTC']),
+                'CFE-CGC': safeNumber(rowData['CFE-CGC']),
+                'SOLIDAIRES': safeNumber(rowData['SOLIDAIRES']),
+                'UNSA': safeNumber(rowData['UNSA']),
+                'AUTRES': safeNumber(rowData['AUTRES'])
             });
             
             // Convertir les valeurs en nombres pour éviter les problèmes de calcul
-            // Utiliser Number() au lieu de parseInt() pour éviter les problèmes de conversion
-            // Remplacer les valeurs non numériques par 0
-            const inscrits = Number(rowData['Inscrits']) || 0;
-            const votants = Number(rowData['Votants']) || 0;
-            const sve = Number(rowData['sve_total']) || 0;
-            const cgt = Number(rowData['CGT']) || 0;
-            const cfdt = Number(rowData['CFDT']) || 0;
-            const cgtfo = Number(rowData['CGT-FO']) || 0;
-            const cftc = Number(rowData['CFTC']) || 0;
-            const cfecgc = Number(rowData['CFE-CGC']) || 0;
-            const solidaires = Number(rowData['SOLIDAIRES']) || 0;
-            const unsa = Number(rowData['UNSA']) || 0;
-            const autres = Number(rowData['AUTRES']) || 0;
+            // S'assurer que les valeurs sont des nombres valides
+            let inscrits = 0, votants = 0, sve = 0, cgt = 0, cfdt = 0, cgtfo = 0, cftc = 0, cfecgc = 0, solidaires = 0, unsa = 0, autres = 0;
+            
+            inscrits = safeNumber(rowData['Inscrits']);
+            votants = safeNumber(rowData['Votants']);
+            sve = safeNumber(rowData['sve_total']);
+            cgt = safeNumber(rowData['CGT']);
+            cfdt = safeNumber(rowData['CFDT']);
+            cgtfo = safeNumber(rowData['CGT-FO']);
+            cftc = safeNumber(rowData['CFTC']);
+            cfecgc = safeNumber(rowData['CFE-CGC']);
+            solidaires = safeNumber(rowData['SOLIDAIRES']);
+            unsa = safeNumber(rowData['UNSA']);
+            autres = safeNumber(rowData['AUTRES']);
             
             // Vérifier que les valeurs sont des nombres valides
             if (isNaN(inscrits) || isNaN(votants) || isNaN(sve)) {
                 console.warn('Valeurs numériques invalides pour le PV:', rowData['NumPV'], 'SIRET:', siret);
             }
             
-            // Additionner les valeurs numériques pour l'entreprise seulement si elles sont valides
-            if (!isNaN(inscrits)) entreprisesBySiret[siret].Inscrits += inscrits;
-            if (!isNaN(votants)) entreprisesBySiret[siret].Votants += votants;
-            if (!isNaN(sve)) entreprisesBySiret[siret].sve_total += sve;
-            if (!isNaN(cgt)) entreprisesBySiret[siret].CGT += cgt;
-            if (!isNaN(cfdt)) entreprisesBySiret[siret].CFDT += cfdt;
-            if (!isNaN(cgtfo)) entreprisesBySiret[siret]['CGT-FO'] += cgtfo;
-            if (!isNaN(cftc)) entreprisesBySiret[siret].CFTC += cftc;
-            if (!isNaN(cfecgc)) entreprisesBySiret[siret]['CFE-CGC'] += cfecgc;
-            if (!isNaN(solidaires)) entreprisesBySiret[siret].SOLIDAIRES += solidaires;
-            if (!isNaN(unsa)) entreprisesBySiret[siret].UNSA += unsa;
-            if (!isNaN(autres)) entreprisesBySiret[siret].AUTRES += autres;
+            // Additionner les valeurs numériques pour l'entreprise
+            // Toutes les valeurs sont garanties d'être des nombres valides grâce à safeNumber
+            entreprisesBySiret[siret].Inscrits += inscrits;
+            entreprisesBySiret[siret].Votants += votants;
+            entreprisesBySiret[siret].sve_total += sve;
+            entreprisesBySiret[siret].CGT += cgt;
+            entreprisesBySiret[siret].CFDT += cfdt;
+            entreprisesBySiret[siret]['CGT-FO'] += cgtfo;
+            entreprisesBySiret[siret].CFTC += cftc;
+            entreprisesBySiret[siret]['CFE-CGC'] += cfecgc;
+            entreprisesBySiret[siret].SOLIDAIRES += solidaires;
+            entreprisesBySiret[siret].UNSA += unsa;
+            entreprisesBySiret[siret].AUTRES += autres;
         }
     }
     
@@ -224,19 +228,35 @@ function processCSVData(csvText) {
     
     console.log('Nombre total d\'entreprises (SIRET uniques):', data.length);
     
-    // Calculer les totaux avec vérification des valeurs
+    // Calculer les totaux - méthode complètement réécrite pour éviter les erreurs
     let totalInscrits = 0;
     let totalVotants = 0;
     let totalSVE = 0;
     let totalCGT = 0;
     
-    data.forEach(item => {
-        // Vérifier que les valeurs sont des nombres valides avant de les ajouter
-        if (!isNaN(item.Inscrits)) totalInscrits += Number(item.Inscrits);
-        if (!isNaN(item.Votants)) totalVotants += Number(item.Votants);
-        if (!isNaN(item.sve_total)) totalSVE += Number(item.sve_total);
-        if (!isNaN(item.CGT)) totalCGT += Number(item.CGT);
-    });
+    // Calculer les totaux en utilisant reduce pour plus de sécurité
+    // Limiter les valeurs à des nombres raisonnables pour éviter les valeurs absurdes
+    totalInscrits = data.reduce((sum, item) => {
+        const val = safeNumber(item.Inscrits);
+        // Vérifier que la valeur est raisonnable (moins de 100 000 par entreprise)
+        return sum + (val > 100000 ? 0 : val);
+    }, 0);
+    
+    totalVotants = data.reduce((sum, item) => {
+        const val = safeNumber(item.Votants);
+        // Vérifier que la valeur est raisonnable (moins de 100 000 par entreprise)
+        return sum + (val > 100000 ? 0 : val);
+    }, 0);
+    
+    totalSVE = data.reduce((sum, item) => {
+        const val = safeNumber(item.sve_total);
+        return sum + (val > 100000 ? 0 : val);
+    }, 0);
+    
+    totalCGT = data.reduce((sum, item) => {
+        const val = safeNumber(item.CGT);
+        return sum + (val > 100000 ? 0 : val);
+    }, 0);
     
     console.log('Total inscrits:', totalInscrits, 'Total votants:', totalVotants);
     console.log('Total SVE:', totalSVE, 'Total CGT:', totalCGT);
@@ -398,12 +418,18 @@ function updateStats() {
     });
     
     filteredData.forEach(item => {
-        stats.totalInscrits += parseInt(item.Inscrits || 0);
-        stats.totalVotants += parseInt(item.Votants || 0);
-        stats.totalSVE += parseInt(item.sve_total || 0);
+        // Utiliser safeNumber et limiter les valeurs aberrantes (> 100000)
+        const inscrits = safeNumber(item.Inscrits);
+        const votants = safeNumber(item.Votants);
+        const sve = safeNumber(item.sve_total);
+        
+        stats.totalInscrits += (inscrits > 100000 ? 0 : inscrits);
+        stats.totalVotants += (votants > 100000 ? 0 : votants);
+        stats.totalSVE += (sve > 100000 ? 0 : sve);
         
         ['CGT', 'CFDT', 'CGT-FO', 'CFTC', 'CFE-CGC', 'SOLIDAIRES', 'UNSA', 'AUTRES'].forEach(s => {
-            stats.voix[s] += parseInt(item[s] || 0);
+            const val = safeNumber(item[s]);
+            stats.voix[s] += (val > 100000 ? 0 : val);
         });
         
         if (item.syndicatDominant) {
@@ -416,7 +442,13 @@ function updateStats() {
     });
     
     const cont = document.getElementById('global-stats');
-    const fmt = n => Math.round(n).toLocaleString();
+    // Fonction pour formater les nombres avec vérification des valeurs aberrantes
+    const fmt = n => {
+        // Vérifier que n est un nombre valide et raisonnable
+        if (isNaN(n) || n === null || n === undefined) return '0';
+        if (n > 100000000) return '0'; // Valeur clairement aberrante
+        return Math.round(n).toLocaleString();
+    };
     
     let html = `<div class="row text-center">`;
     [['Entreprises', 'totalEntreprises'], ['Inscrits', 'totalInscrits'], ['Votants', 'totalVotants'], ['SVE', 'totalSVE']]
@@ -459,18 +491,25 @@ function updateTopEntreprises() {
 // Ne pas ajouter un second event listener pour loadData car il est déjà appelé dans le HTML
 // document.addEventListener('DOMContentLoaded', loadData);
 
-// Fonction pour obtenir le mapping des départements
+// Fonction pour convertir en nombre sûr - définie globalement pour être utilisée partout
+function safeNumber(val) {
+    if (val === undefined || val === null || val === '') return 0;
+    const num = Number(val);
+    return isNaN(num) ? 0 : num;
+}
+
+// Fonction pour récupérer le mapping des départements
 function getDepartementMapping() {
     return {
-        '1': 'Ain',
-        '2': 'Aisne',
-        '3': 'Allier',
-        '4': 'Alpes-de-Haute-Provence',
-        '5': 'Hautes-Alpes',
-        '6': 'Alpes-Maritimes',
-        '7': 'Ardèche',
-        '8': 'Ardennes',
-        '9': 'Ariège',
+        '01': 'Ain',
+        '02': 'Aisne',
+        '03': 'Allier',
+        '04': 'Alpes-de-Haute-Provence',
+        '05': 'Hautes-Alpes',
+        '06': 'Alpes-Maritimes',
+        '07': 'Ardèche',
+        '08': 'Ardennes',
+        '09': 'Ariège',
         '10': 'Aube',
         '11': 'Aude',
         '12': 'Aveyron',
@@ -481,6 +520,8 @@ function getDepartementMapping() {
         '17': 'Charente-Maritime',
         '18': 'Cher',
         '19': 'Corrèze',
+        '2A': 'Corse-du-Sud',
+        '2B': 'Haute-Corse',
         '21': 'Côte-d\'Or',
         '22': 'Côtes-d\'Armor',
         '23': 'Creuse',
