@@ -6,8 +6,8 @@
     <title>Cartographie des Élections Syndicales</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://d3js.org/d3.v7.min.js"></script>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -457,6 +457,15 @@
                     </div>
                 </div>
                 <div class="row mb-3">
+                    <div class="col-12">
+                        <h5>Mode de visualisation</h5>
+                        <div id="visualisation-selector" class="d-flex flex-wrap">
+                            <button class="btn btn-outline-primary btn-visualisation active" data-value="syndicats">Syndicats dominants</button>
+                            <button class="btn btn-outline-success btn-visualisation" data-value="inscrits">Nombre d'inscrits</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mb-3">
                     <div class="col-12 text-center">
                         <a href="carte_data_csv.html" class="btn btn-success">Voir la carte simplifiée</a>
                     </div>
@@ -490,6 +499,10 @@
                     <div id="national-stats"></div>
                 </div>
                 <div class="stats-box">
+                    <div class="stats-title">Répartition par syndicat dominant</div>
+                    <div id="syndicat-dominance-stats"></div>
+                </div>
+                <div class="stats-box">
                     <h2 class="mt-4 mb-3">Top 5 Départements</h2>
                     <div id="top-departements" class="mb-4 card border-secondary">
                         <div class="card-header bg-secondary text-white">
@@ -515,6 +528,7 @@
         let selectedDepartement = null;
         let isFullscreenMode = false;
         let isDarkMode = false;
+        let visualisationMode = 'syndicats'; // Modes: 'syndicats' ou 'inscrits'
         let statsNationales = {
             total_scrutins: 0,
             total_inscrits: 0,
@@ -751,7 +765,20 @@ let colorScale = d3.scaleSequential(colorPalettes['all']);
                 const deptData = resultatsParDepartement[dept];
                 if (!deptData) return '#cccccc';
                 
-                if (selectedSyndicat === 'all') {
+                // Mode de visualisation par nombre d'inscrits
+                if (visualisationMode === 'inscrits') {
+                    // Échelle de couleur en fonction du nombre d'inscrits
+                    const inscrits = deptData.total_inscrits || 0;
+                    if (inscrits > 100000) return '#081c15'; // Vert très foncé
+                    if (inscrits > 50000) return '#1b4332'; // Vert foncé
+                    if (inscrits > 25000) return '#2d6a4f'; // Vert moyen
+                    if (inscrits > 10000) return '#40916c'; // Vert
+                    if (inscrits > 5000) return '#52b788'; // Vert clair
+                    if (inscrits > 1000) return '#74c69d'; // Vert très clair
+                    return '#b7e4c7'; // Vert pâle
+                }
+                // Mode de visualisation par syndicats
+                else if (selectedSyndicat === 'all') {
                     // Couleur basée sur le syndicat dominant
                     const syndicats = Object.keys(deptData.voix);
                     let maxVoix = 0;
@@ -1547,124 +1574,157 @@ let colorScale = d3.scaleSequential(colorPalettes['all']);
         function updateNationalStats() {
             const container = document.getElementById('national-stats');
             
-            let html = '<h5 class="mb-3 text-center">Statistiques Nationales</h5>';
+            // Format des nombres avec séparateur de milliers
+            const formatNumber = (num) => Math.round(num).toLocaleString();
             
-            if (selectedSyndicat === 'all') {
-                // Affichage amélioré des statistiques générales
-                html += `
-                    <div class="row mb-3">
-                        <div class="col-6">
-                            <div class="card bg-light">
-                                <div class="card-body text-center p-2">
-                                    <div class="stats-value display-6">${statsNationales.total_scrutins ? statsNationales.total_scrutins.toLocaleString() : '0'}</div>
-                                    <div class="stats-label">Scrutins</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="card bg-light">
-                                <div class="card-body text-center p-2">
-                                    <div class="stats-value display-6">${statsNationales.total_inscrits ? statsNationales.total_inscrits.toLocaleString() : '0'}</div>
-                                    <div class="stats-label">Inscrits</div>
-                                </div>
-                            </div>
-                        </div>
+            // Générer le HTML
+            const html = `
+                <div class="stats-grid">
+                    <div class="stats-item">
+                        <div class="stats-value">${formatNumber(statsNationales.total_scrutins)}</div>
+                        <div class="stats-label">Scrutins</div>
                     </div>
-                    <div class="row">
-                        <div class="col-6">
-                            <div class="card bg-light">
-                                <div class="card-body text-center p-2">
-                                    <div class="stats-value display-6">${statsNationales.total_votants ? statsNationales.total_votants.toLocaleString() : '0'}</div>
-                                    <div class="stats-label">Votants</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="card bg-light">
-                                <div class="card-body text-center p-2">
-                                    <div class="stats-value display-6">${statsNationales.total_sve ? statsNationales.total_sve.toLocaleString() : '0'}</div>
-                                    <div class="stats-label">SVE</div>
-                                </div>
-                            </div>
-                        </div>
+                    <div class="stats-item">
+                        <div class="stats-value">${formatNumber(statsNationales.total_inscrits)}</div>
+                        <div class="stats-label">Inscrits</div>
                     </div>
-                `;
-            } else {
-                const voix = statsNationales.voix[selectedSyndicat];
-                const pourcentage = (voix / statsNationales.total_sve) * 100;
-                
-                // Compter le nombre de scrutins où le syndicat est présent et le nombre total de scrutins
-                let scrutinsPresents = 0;
-                let totalScrutins = 0;
-                for (const deptCode in resultatsParDepartement) {
-                    const dept = resultatsParDepartement[deptCode];
-                    if (dept.total_scrutins) {
-                        totalScrutins += dept.total_scrutins;
-                    }
-                    if (dept.scrutins_par_syndicat && dept.scrutins_par_syndicat[selectedSyndicat]) {
-                        scrutinsPresents += dept.scrutins_par_syndicat[selectedSyndicat];
-                    }
-                }
-                
-                // Calculer le pourcentage de présence par rapport au nombre total de PV
-                const pourcentagePresence = totalScrutins > 0 ? (scrutinsPresents / totalScrutins) * 100 : 0;
-                
-                // Déterminer la couleur de fond selon le syndicat sélectionné
-                let bgColor = 'primary';
-                if (selectedSyndicat === 'CGT') bgColor = 'danger';
-                else if (selectedSyndicat === 'CFDT') bgColor = 'info';
-                else if (selectedSyndicat === 'CGT-FO') bgColor = 'warning';
-                else if (selectedSyndicat === 'SOLIDAIRES') bgColor = 'success';
-                
-                html += `
-                    <div class="row mb-3">
-                        <div class="col-12 mb-2">
-                            <div class="alert alert-${bgColor} text-center">
-                                <h5 class="mb-0">${selectedSyndicat}</h5>
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="card bg-light">
-                                <div class="card-body text-center p-2">
-                                    <div class="stats-value display-6">${voix ? voix.toLocaleString() : '0'}</div>
-                                    <div class="stats-label">Voix totales</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="card bg-light">
-                                <div class="card-body text-center p-2">
-                                    <div class="stats-value display-6 text-${bgColor}">${pourcentage.toFixed(2)}%</div>
-                                    <div class="stats-label">Représentativité</div>
-                                </div>
-                            </div>
-                        </div>
+                    <div class="stats-item">
+                        <div class="stats-value">${formatNumber(statsNationales.total_votants)}</div>
+                        <div class="stats-label">Votants</div>
                     </div>
-                    <div class="row">
-                        <div class="col-6">
-                            <div class="card bg-light">
-                                <div class="card-body text-center p-2">
-                                    <div class="stats-value display-6">${scrutinsPresents ? scrutinsPresents.toLocaleString() : '0'}</div>
-                                    <div class="stats-label">Scrutins présents</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="card bg-light">
-                                <div class="card-body text-center p-2">
-                                    <div class="stats-value display-6 text-${bgColor}">${pourcentagePresence.toFixed(2)}%</div>
-                                    <div class="stats-label">Taux de présence</div>
-                                </div>
-                            </div>
-                        </div>
+                    <div class="stats-item">
+                        <div class="stats-value">${formatNumber(statsNationales.total_sve)}</div>
+                        <div class="stats-label">SVE</div>
                     </div>
-                `;
-            }
+                </div>
+                <div class="mt-3">
+                    <h6>Répartition des voix</h6>
+                    <table class="table table-sm table-striped">
+                        <thead>
+                            <tr>
+                                <th>Syndicat</th>
+                                <th>Voix</th>
+                                <th>%</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${Object.keys(statsNationales.voix).map(syndicat => `
+                                <tr>
+                                    <td>${syndicat}</td>
+                                    <td>${formatNumber(statsNationales.voix[syndicat])}</td>
+                                    <td>${statsNationales.pourcentages[syndicat]}%</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
             
             container.innerHTML = html;
             
+            // Mettre à jour les statistiques de dominance par syndicat
+            updateSyndicatDominanceStats();
         }
-
+        
+        // Mettre à jour la légende des couleurs
+        function updateColorLegend() {
+            const container = document.getElementById('color-legend');
+            let html = '';
+            
+            if (visualisationMode === 'inscrits') {
+                // Légende pour le mode nombre d'inscrits
+                html = `<h6 class="mb-2">Nombre d'inscrits</h6>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #081c15;"></div>
+                    <div>&gt; 100 000</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #1b4332;"></div>
+                    <div>&gt; 50 000</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #2d6a4f;"></div>
+                    <div>&gt; 25 000</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #40916c;"></div>
+                    <div>&gt; 10 000</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #52b788;"></div>
+                    <div>&gt; 5 000</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #74c69d;"></div>
+                    <div>&gt; 1 000</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #b7e4c7;"></div>
+                    <div>&lt; 1 000</div>
+                </div>`;
+            } else if (selectedSyndicat === 'all') {
+                // Légende pour le mode syndicats dominants
+                html = `<h6 class="mb-2">Syndicat dominant</h6>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #e63946;"></div>
+                    <div>CGT</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #457b9d;"></div>
+                    <div>CFDT</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #f4a261;"></div>
+                    <div>CGT-FO</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #2a9d8f;"></div>
+                    <div>CFTC</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #6c757d;"></div>
+                    <div>CFE-CGC</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #4caf50;"></div>
+                    <div>SOLIDAIRES</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #9c27b0;"></div>
+                    <div>UNSA</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #aaaaaa;"></div>
+                    <div>AUTRES</div>
+                </div>`;
+            } else {
+                // Légende pour un syndicat spécifique
+                html = `<h6 class="mb-2">Pourcentage ${selectedSyndicat}</h6>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #b71c1c;"></div>
+                    <div>&gt; 40%</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #e53935;"></div>
+                    <div>&gt; 30%</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #ef5350;"></div>
+                    <div>&gt; 20%</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #ffcdd2;"></div>
+                    <div>&gt; 10%</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #f5f5f5;"></div>
+                    <div>&lt; 10%</div>
+                </div>`;
+            }
+            
+            container.innerHTML = html;
+        }
+        
         // Mettre à jour le top 5 des départements
         function updateTopDepartements() {
             const container = document.getElementById('top-departements').querySelector('.card-body');
@@ -1708,54 +1768,100 @@ let colorScale = d3.scaleSequential(colorPalettes['all']);
             html += '</div>';
             
             container.innerHTML = html;
-            
         }
-
-        // Mettre à jour la légende des couleurs
-        function updateColorLegend() {
-            const container = document.getElementById('color-legend');
+        
+        // Fonction pour calculer et afficher le nombre de départements où chaque syndicat est dominant
+        function updateSyndicatDominanceStats() {
+            const container = document.getElementById('syndicat-dominance-stats');
             
-            // Déterminer les valeurs min et max pour l'échelle de couleurs
-            let values = [];
+            // Compter les départements par syndicat dominant
+            const syndicatCount = {
+                'CGT': 0,
+                'CFDT': 0,
+                'CGT-FO': 0,
+                'CFTC': 0,
+                'CFE-CGC': 0,
+                'SOLIDAIRES': 0,
+                'UNSA': 0,
+                'AUTRES': 0
+            };
+            
+            // Parcourir tous les départements
             for (const deptCode in resultatsParDepartement) {
-                const dept = resultatsParDepartement[deptCode];
-                if (selectedSyndicat === 'all') {
-                    values.push(dept.total_inscrits || 0);
-                } else {
-                    values.push(dept.pourcentages[selectedSyndicat]);
+                const deptData = resultatsParDepartement[deptCode];
+                if (!deptData || !deptData.voix) continue;
+                
+                // Trouver le syndicat dominant
+                const syndicats = Object.keys(deptData.voix);
+                let maxVoix = 0;
+                let syndicatDominant = '';
+                
+                syndicats.forEach(syndicat => {
+                    if (deptData.voix[syndicat] > maxVoix) {
+                        maxVoix = deptData.voix[syndicat];
+                        syndicatDominant = syndicat;
+                    }
+                });
+                
+                // Incrémenter le compteur pour ce syndicat
+                if (syndicatDominant && syndicatCount.hasOwnProperty(syndicatDominant)) {
+                    syndicatCount[syndicatDominant]++;
                 }
             }
-            const minValue = d3.min(values);
-            const maxValue = d3.max(values);
             
-            // Générer 5 niveaux pour la légende
-            const levels = 5;
-            const legendValues = [];
-            
-            for (let i = 0; i < levels; i++) {
-                const value = minValue + (i / (levels - 1)) * (maxValue - minValue);
-                legendValues.push(value);
-            }
+            // Calculer le total de départements
+            const totalDepts = Object.values(syndicatCount).reduce((sum, count) => sum + count, 0);
             
             // Générer le HTML
-            let html = `<h6 class="mb-2">${selectedSyndicat === 'all' ? 'Nombre d\'inscrits' : 'Pourcentage ' + selectedSyndicat}</h6>`;
+            let html = `
+                <div class="mt-2">
+                    <table class="table table-sm table-striped">
+                        <thead>
+                            <tr>
+                                <th>Syndicat</th>
+                                <th>Départements</th>
+                                <th>%</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
             
-            for (const value of legendValues) {
-                const color = colorScale(value);
-                const label = selectedSyndicat === 'all' 
-                    ? Math.round(value) 
-                    : value.toFixed(1) + '%';
+            // Trier les syndicats par nombre de départements (du plus grand au plus petit)
+            const sortedSyndicats = Object.keys(syndicatCount).sort((a, b) => syndicatCount[b] - syndicatCount[a]);
+            
+            for (const syndicat of sortedSyndicats) {
+                const count = syndicatCount[syndicat];
+                const percentage = totalDepts > 0 ? ((count / totalDepts) * 100).toFixed(1) : '0.0';
+                
+                // Définir une classe CSS pour mettre en évidence le syndicat
+                let rowClass = '';
+                if (syndicat === 'CGT') rowClass = 'table-danger';
+                else if (syndicat === 'CFDT') rowClass = 'table-info';
+                else if (syndicat === 'CGT-FO') rowClass = 'table-warning';
                 
                 html += `
-                    <div class="legend-item">
-                        <div class="legend-color" style="background-color: ${color};"></div>
-                        <div>${label}</div>
-                    </div>
+                    <tr class="${rowClass}">
+                        <td><strong>${syndicat}</strong></td>
+                        <td>${count}</td>
+                        <td>${percentage}%</td>
+                    </tr>
                 `;
             }
             
-            container.innerHTML = html;
+            html += `
+                        </tbody>
+                        <tfoot>
+                            <tr class="table-secondary">
+                                <td><strong>Total</strong></td>
+                                <td><strong>${totalDepts}</strong></td>
+                                <td>100%</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            `;
             
+            container.innerHTML = html;
         }
 
         // Gestionnaire d'événements pour les sélecteurs
@@ -1804,6 +1910,51 @@ let colorScale = d3.scaleSequential(colorPalettes['all']);
                 document.getElementById('dark-mode-toggle').innerHTML = '<i class="bi bi-sun"></i>';
                 isDarkMode = true;
             }
+            
+            // Ajouter les écouteurs d'événements pour le sélecteur de mode de visualisation
+            document.querySelectorAll('#visualisation-selector .btn-visualisation').forEach(button => {
+                button.addEventListener('click', function() {
+                    // Désélectionner tous les boutons
+                    document.querySelectorAll('#visualisation-selector .btn-visualisation').forEach(btn => {
+                        btn.classList.remove('active');
+                        if (btn.classList.contains('btn-primary')) {
+                            btn.classList.remove('btn-primary');
+                            btn.classList.add('btn-outline-primary');
+                        }
+                        if (btn.classList.contains('btn-success')) {
+                            btn.classList.remove('btn-success');
+                            btn.classList.add('btn-outline-success');
+                        }
+                    });
+                    
+                    // Sélectionner le nouveau bouton
+                    this.classList.add('active');
+                    if (this.classList.contains('btn-outline-primary')) {
+                        this.classList.remove('btn-outline-primary');
+                        this.classList.add('btn-primary');
+                    }
+                    if (this.classList.contains('btn-outline-success')) {
+                        this.classList.remove('btn-outline-success');
+                        this.classList.add('btn-success');
+                    }
+                    
+                    // Mettre à jour le mode de visualisation
+                    visualisationMode = this.getAttribute('data-value');
+                    
+                    // Mettre à jour le titre de la carte
+                    if (visualisationMode === 'inscrits') {
+                        document.getElementById('map-title').textContent = 'Nombre d\'inscrits par département';
+                    } else {
+                        document.getElementById('map-title').textContent = 'Syndicat dominant par département';
+                    }
+                    
+                    // Mettre à jour la coloration de la carte
+                    updateMapColoring();
+                    
+                    // Mettre à jour la légende des couleurs
+                    updateColorLegend();
+                });
+            });
             
             // Gérer la sortie du mode plein écran avec la touche Echap
             document.addEventListener('fullscreenchange', function() {
