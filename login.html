@@ -108,6 +108,69 @@
                 </div>
                 <button type="submit" class="btn btn-login">Se connecter</button>
             </form>
+            
+            <div class="text-center mt-4">
+                <button id="help-btn" class="btn btn-sm btn-outline-secondary" type="button">
+                    Besoin d'un identifiant ?
+                </button>
+                <div id="help-tooltip" class="tooltip-custom" style="display: none;">
+                    Pour obtenir un identifiant, veuillez contacter : <br>
+                    <a href="mailto:q.leyrat@cgt.fr">q.leyrat@cgt.fr</a>
+                </div>
+            </div>
+            
+            <style>
+                .tooltip-custom {
+                    position: absolute;
+                    background-color: #fff;
+                    border: 1px solid #ddd;
+                    border-radius: 6px;
+                    padding: 10px 15px;
+                    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+                    z-index: 1000;
+                    margin-top: 10px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    width: 250px;
+                    text-align: center;
+                }
+                .tooltip-custom:after {
+                    content: '';
+                    position: absolute;
+                    top: -8px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    width: 0;
+                    height: 0;
+                    border-left: 8px solid transparent;
+                    border-right: 8px solid transparent;
+                    border-bottom: 8px solid #fff;
+                }
+            </style>
+            
+            <script>
+                document.getElementById('help-btn').addEventListener('click', function() {
+                    const tooltip = document.getElementById('help-tooltip');
+                    if (tooltip.style.display === 'none') {
+                        tooltip.style.display = 'block';
+                        
+                        // Masquer la bulle après 5 secondes
+                        setTimeout(function() {
+                            tooltip.style.display = 'none';
+                        }, 5000);
+                        
+                        // Masquer la bulle si on clique ailleurs
+                        document.addEventListener('click', function hideTooltip(e) {
+                            if (e.target !== document.getElementById('help-btn') && !tooltip.contains(e.target)) {
+                                tooltip.style.display = 'none';
+                                document.removeEventListener('click', hideTooltip);
+                            }
+                        });
+                    } else {
+                        tooltip.style.display = 'none';
+                    }
+                });
+            </script>
         </div>
     </div>
 
