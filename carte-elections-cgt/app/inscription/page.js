@@ -53,7 +53,7 @@ export default function RegisterPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'Une erreur est survenue lors de l\'inscription');
+        throw new Error(data.message || "Une erreur est survenue lors de l'inscription");
       }
 
       setSuccess(true);
@@ -101,6 +101,7 @@ export default function RegisterPage() {
                   value={formData.last_name}
                   onChange={handleChange}
                   required
+                  suppressHydrationWarning
                 />
               </div>
               
@@ -116,6 +117,7 @@ export default function RegisterPage() {
                   value={formData.first_name}
                   onChange={handleChange}
                   required
+                  suppressHydrationWarning
                 />
               </div>
               
@@ -131,6 +133,7 @@ export default function RegisterPage() {
                   value={formData.organization}
                   onChange={handleChange}
                   required
+                  suppressHydrationWarning
                 />
               </div>
               
@@ -146,6 +149,7 @@ export default function RegisterPage() {
                   value={formData.email}
                   onChange={handleChange}
                   required
+                  suppressHydrationWarning
                 />
               </div>
               
@@ -161,6 +165,7 @@ export default function RegisterPage() {
                   value={formData.responsibility}
                   onChange={handleChange}
                   required
+                  suppressHydrationWarning
                 />
               </div>
               
@@ -177,6 +182,7 @@ export default function RegisterPage() {
                   onChange={handleChange}
                   required
                   minLength={8}
+                  suppressHydrationWarning
                 />
               </div>
               
@@ -193,6 +199,7 @@ export default function RegisterPage() {
                   onChange={handleChange}
                   required
                   minLength={8}
+                  suppressHydrationWarning
                 />
               </div>
               

@@ -12,17 +12,18 @@
     "@supabase/auth-helpers-nextjs": "^0.10.0",
     "@supabase/supabase-js": "^2.49.4",
     "bcryptjs": "^3.0.2",
+    "bootstrap": "^5.3.0-alpha1",
     "cookie": "^1.0.2",
     "datatables.net-bs5": "^1.13.4",
     "datatables.net-buttons-bs5": "^2.3.6",
+    "font-awesome": "^4.7.0",
+    "jquery": "^3.6.0",
+    "js-cookie": "^3.0.5",
     "jsonwebtoken": "^9.0.2",
     "leaflet": "^1.9.4",
     "next": "15.3.1",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "jquery": "^3.6.0",
-    "bootstrap": "^5.3.0-alpha1",
-    "font-awesome": "^4.7.0"
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comparaison des Cycles</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <ul>
+                <li><a href="index.html">Accueil</a></li>
+                <li><a href="comparaison_cycles.html">Comparaison des Cycles</a></li>
+                <!-- ... autres liens ... -->
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <h1>Comparaison des Cycles</h1>
+        <section id="filters">
+            <label for="departement-select">Département :</label>
+            <select id="departement-select">
+                <option value="">Tous</option>
+            </select>
+            <label for="entreprise-input">Entreprise :</label>
+            <input type="text" id="entreprise-input" placeholder="Nom de l'entreprise">
+            <label>
+                <input type="checkbox" id="presence-cgt-checkbox">
+                Présence CGT
+            </label>
+            <button onclick="resetFilters()">Réinitialiser</button>
+        </section>
+        <section id="stats">
+            <h2>Statistiques</h2>
+            <p>Total Cycle 3 : <span id="stats-total-cycle3">0</span></p>
+            <p>Total Cycle 4 : <span id="stats-total-cycle4">0</span></p>
+            <p>Évolution : <span id="stats-evolution">0%</span></p>
+        </section>
+        <section id="data-table-container">
+            <table id="data-table"></table>
+        </section>
+    </main>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+    <script src="comparaison-cycles.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const departements = getDepartementMapping();
+            populateDepartements(departements);
+            // Charger les données et initialiser le tableau ici...
+        });
+    </script>
+</body>
+</html>

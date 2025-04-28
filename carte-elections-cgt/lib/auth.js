@@ -49,13 +49,13 @@ export async function registerUser(userData) {
  */
 export async function loginUser(email, password) {
   // Récupérer l'utilisateur
-  const { data: user, error } = await supabase
+  const { data: user, error: userError } = await supabase
     .from('users')
     .select('*')
     .eq('email', email)
     .single();
   
-  if (error) throw error;
+  if (userError) throw userError;
   if (!user) throw new Error('Utilisateur non trouvé');
   
   // Vérifier si l'utilisateur est approuvé

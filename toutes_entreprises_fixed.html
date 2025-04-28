@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Toutes les Entreprises et PV - Élections Syndicales</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- DataTables CSS & JS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css">
+    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
+    <!-- DataTables Buttons Extension -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.3.6/css/buttons.bootstrap5.min.css">
+    <script src="https://cdn.datatables.net/buttons/2.3.6/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.bootstrap5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.html5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.print.min.js"></script>
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; background-color: #f8f9fa; margin: 0; padding: 0; }
+        .header { background-color: #e63946; color: white; padding: 20px; text-align: center; }
+        .logo-container { display: flex; justify-content: center; align-items: center; margin-bottom: 15px; }
+        .logo img { width: 60px; height: 60px; margin-right: 20px; }
+        .container-fluid { padding: 20px; }
+        .card { border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; transition: all 0.3s ease; }
+        .card-header { background-color: #f8f9fa; border-bottom: 1px solid #e9ecef; padding: 15px 20px; font-weight: bold; }
+        .filter-section { background-color: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 20px; }
+        .btn-primary { background-color: #e63946; border-color: #e63946; transition: all 0.3s ease; }
+        .btn-primary:hover { background-color: #c1121f; border-color: #c1121f; transform: translateY(-2px); }
+        .footer { text-align: center; padding: 20px; color: #777; font-size: 0.9rem; border-top: 1px solid #eee; background-color: #f9f9f9; }
+        .fade-in { animation: fadeIn 0.5s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .dark-mode { background-color: #212529; color: #f8f9fa; }
+        .dark-mode .card { background-color: #343a40; color: #f8f9fa; }
+        .dark-mode .card-header { background-color: #2b3035; border-bottom: 1px solid #495057; }
+        .dark-mode .filter-section { background-color: #343a40; }
+        .dark-mode .table { color: #f8f9fa; }
+        .dark-mode .footer { background-color: #343a40; color: #adb5bd; border-top: 1px solid #495057; }
+        /* Badges syndicats */
+        .badge-cgt { background-color: #e63946; }
+        .badge-cfdt { background-color: #f4a261; }
+        .badge-cgtfo { background-color: #2a9d8f; }
+        .badge-cftc { background-color: #457b9d; }
+        .badge-cfecgc { background-color: #6c757d; }
+        .badge-solidaires { background-color: #4caf50; }
+        .badge-unsa { background-color: #9c27b0; }
+        .badge-autres { background-color: #aaaaaa; }
+        .badge { color: white; }
+        .dataTables_wrapper .paginate_button:hover { background: #e63946; color: white !important; border-color: #e63946; }
+        /* Loader */
+        .loader-container { 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 200px; 
+        }
+        .loader {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #e63946;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 2s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo-container">
+            <div class="logo"><img src="logo-cgt.png" alt="Logo CGT"></div>
+            <h1>Toutes les Entreprises et PV</h1>
+        </div>
+        <h4>Mesure de représentativité du 8 avril 2025 pour le cycle 4</h4>
+    </div>
+    <div class="container-fluid">
+        <!-- Breadcrumb & Dark mode toggle -->
+        <div class="row mb-3">
+            <div class="col-12 d-flex justify-content-between align-items-center">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="index.html">Accueil</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Toutes les entreprises et PV</li>
+                    </ol>
+                </nav>
+                <button id="dark-mode-toggle" class="btn btn-sm btn-outline-secondary"><i class="bi bi-moon"></i> Mode sombre</button>
+            </div>
+        </div>
+        <!-- Filtres avancés -->
+        <div class="card fade-in">
+            <div class="card-header"><i class="fas fa-filter"></i> Filtres avancés</div>
+            <div class="card-body filter-section">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <label for="filter-departement" class="form-label">Département</label>
+                        <select id="filter-departement" class="form-select"><option value="">Tous les départements</option></select>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="filter-entreprise" class="form-label">Entreprise</label>
+                        <input type="text" id="filter-entreprise" class="form-control" placeholder="Nom de l'entreprise">
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="filter-syndicat" class="form-label">Syndicat dominant</label>
+                        <select id="filter-syndicat" class="form-select">
+                            <option value="">Tous les syndicats</option>
+                            <option value="CGT">CGT</option>
+                            <option value="CFDT">CFDT</option>
+                            <option value="CGT-FO">CGT-FO</option>
+                            <option value="CFTC">CFTC</option>
+                            <option value="CFE-CGC">CFE-CGC</option>
+                            <option value="SOLIDAIRES">SOLIDAIRES</option>
+                            <option value="UNSA">UNSA</option>
+                            <option value="AUTRES">AUTRES</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="filter-presence-cgt" class="form-label">Présence CGT</label>
+                        <select id="filter-presence-cgt" class="form-select">
+                            <option value="">Tous</option>
+                            <option value="present">Présent</option>
+                            <option value="absent">Absent</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <label for="filter-inscrits-min" class="form-label">Inscrits min</label>
+                        <input type="number" id="filter-inscrits-min" class="form-control" placeholder="Min">
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="filter-inscrits-max" class="form-label">Inscrits max</label>
+                        <input type="number" id="filter-inscrits-max" class="form-control" placeholder="Max">
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="filter-pourcentage-min" class="form-label">% CGT min</label>
+                        <input type="number" id="filter-pourcentage-min" class="form-control" placeholder="Min">
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="filter-pourcentage-max" class="form-label">% CGT max</label>
+                        <input type="number" id="filter-pourcentage-max" class="form-control" placeholder="Max">
+                    </div>
+                </div>
+                <button id="apply-filters" class="btn btn-primary"><i class="fas fa-search"></i> Appliquer</button>
+                <button id="reset-filters" class="btn btn-outline-secondary ms-2"><i class="fas fa-undo"></i> Réinitialiser</button>
+            </div>
+        </div>
+        <!-- Tableau entreprises -->
+        <div class="card fade-in">
+            <div class="card-header"><i class="fas fa-building"></i> Liste des entreprises et PV</div>
+            <div class="card-body">
+                <div id="loading" class="loader-container">
+                    <div class="loader"></div>
+                </div>
+                <div class="table-responsive" id="table-container" style="display: none;">
+                    <table id="entreprises-table" class="table table-striped table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Département</th><th>Entreprise</th><th>SIRET</th><th>Inscrits</th><th>Votants</th><th>SVE</th>
+                                <th>CGT</th><th>CFDT</th><th>CGT-FO</th><th>CFTC</th><th>CFE-CGC</th><th>SOLIDAIRES</th><th>UNSA</th><th>AUTRES</th>
+                                <th>Syndicat dom.</th><th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <!-- Statistiques et top -->
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <div class="card fade-in">
+                    <div class="card-header"><i class="fas fa-chart-pie"></i> Statistiques globales</div>
+                    <div class="card-body" id="global-stats"></div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card fade-in">
+                    <div class="card-header"><i class="fas fa-trophy"></i> Top 10 entreprises par inscrits</div>
+                    <div class="card-body" id="top-entreprises"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="footer">Données issues de la mesure du 8 avril 2025</div>
+    
+    <!-- Script personnalisé pour la gestion des données -->
+    <script src="js/entreprises-data.js"></script>
+    
+    <script>
+        // Afficher le tableau une fois les données chargées
+        document.addEventListener('DOMContentLoaded', function() {
+            // Masquer le loader et afficher le tableau une fois les données chargées
+            const originalLoadData = loadData;
+            loadData = async function() {
+                try {
+                    await originalLoadData();
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('table-container').style.display = 'block';
+                } catch (error) {
+                    console.error('Erreur lors du chargement des données:', error);
+                    alert('Erreur lors du chargement des données. Veuillez réessayer.');
+                }
+            };
+            
+            // Appeler loadData pour charger les données
+            loadData();
+        });
+    </script>
+</body>
+</html>

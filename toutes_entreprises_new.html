@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Toutes les Entreprises et PV - Élections Syndicales</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- DataTables CSS & JS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css">
+    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
+    <!-- DataTables Buttons Extension -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.3.6/css/buttons.bootstrap5.min.css">
+    <script src="https://cdn.datatables.net/buttons/2.3.6/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.bootstrap5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.html5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.print.min.js"></script>
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; background-color: #f8f9fa; margin: 0; padding: 0; }
+        .header { background-color: #e63946; color: white; padding: 20px; text-align: center; }
+        .logo-container { display: flex; justify-content: center; align-items: center; margin-bottom: 15px; }
+        .logo img { width: 60px; height: 60px; margin-right: 20px; }
+        .container-fluid { padding: 20px; }
+        .card { border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; transition: all 0.3s ease; }
+        .card-header { background-color: #f8f9fa; border-bottom: 1px solid #e9ecef; padding: 15px 20px; font-weight: bold; }
+        .filter-section { background-color: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 20px; }
+        .btn-primary { background-color: #e63946; border-color: #e63946; transition: all 0.3s ease; }
+        .btn-primary:hover { background-color: #c1121f; border-color: #c1121f; transform: translateY(-2px); }
+        .footer { text-align: center; padding: 20px; color: #777; font-size: 0.9rem; border-top: 1px solid #eee; background-color: #f9f9f9; }
+        .fade-in { animation: fadeIn 0.5s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .dark-mode { background-color: #212529; color: #f8f9fa; }
+        .dark-mode .card { background-color: #343a40; color: #f8f9fa; }
+        .dark-mode .card-header { background-color: #2b3035; border-bottom: 1px solid #495057; }
+        .dark-mode .filter-section { background-color: #343a40; }
+        .dark-mode .table { color: #f8f9fa; }
+        .dark-mode .footer { background-color: #343a40; color: #adb5bd; border-top: 1px solid #495057; }
+        /* Badges syndicats */
+        .badge-cgt { background-color: #e63946; }
+        .badge-cfdt { background-color: #f4a261; }
+        .badge-cgtfo { background-color: #2a9d8f; }
+        .badge-cftc { background-color: #457b9d; }
+        .badge-cfecgc { background-color: #6c757d; }
+        .badge-solidaires { background-color: #4caf50; }
+        .badge-unsa { background-color: #9c27b0; }
+        .badge-autres { background-color: #aaaaaa; }
+        .badge { color: white; }
+        .dataTables_wrapper .paginate_button:hover { background: #e63946; color: white !important; border-color: #e63946; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo-container">
+            <div class="logo"><img src="logo-cgt.png" alt="Logo CGT"></div>
+            <h1>Toutes les Entreprises et PV</h1>
+        </div>
+        <h4>Mesure de représentativité du 8 avril 2025 pour le cycle 4</h4>
+    </div>
+    <div class="container-fluid">
+        <!-- Breadcrumb & Dark mode toggle -->
+        <div class="row mb-3">
+            <div class="col-12 d-flex justify-content-between align-items-center">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="index.html">Accueil</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Toutes les entreprises et PV</li>
+                    </ol>
+                </nav>
+                <button id="dark-mode-toggle" class="btn btn-sm btn-outline-secondary"><i class="bi bi-moon"></i> Mode sombre</button>
+            </div>
+        </div>
+        <!-- Filtres avancés -->
+        <div class="card fade-in">
+            <div class="card-header"><i class="fas fa-filter"></i> Filtres avancés</div>
+            <div class="card-body filter-section">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <label for="filter-departement" class="form-label">Département</label>
+                        <select id="filter-departement" class="form-select"><option value="">Tous les départements</option></select>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="filter-entreprise" class="form-label">Entreprise</label>
+                        <input type="text" id="filter-entreprise" class="form-control" placeholder="Nom de l'entreprise">
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="filter-syndicat" class="form-label">Syndicat dominant</label>
+                        <select id="filter-syndicat" class="form-select">
+                            <option value="">Tous les syndicats</option>
+                            <option value="CGT">CGT</option>
+                            <option value="CFDT">CFDT</option>
+                            <option value="CGT-FO">CGT-FO</option>
+                            <option value="CFTC">CFTC</option>
+                            <option value="CFE-CGC">CFE-CGC</option>
+                            <option value="SOLIDAIRES">SOLIDAIRES</option>
+                            <option value="UNSA">UNSA</option>
+                            <option value="AUTRES">AUTRES</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="filter-presence-cgt" class="form-label">Présence CGT</label>
+                        <select id="filter-presence-cgt" class="form-select">
+                            <option value="">Tous</option>
+                            <option value="present">Présent</option>
+                            <option value="absent">Absent</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <label for="filter-inscrits-min" class="form-label">Inscrits min</label>
+                        <input type="number" id="filter-inscrits-min" class="form-control" placeholder="Min">
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="filter-inscrits-max" class="form-label">Inscrits max</label>
+                        <input type="number" id="filter-inscrits-max" class="form-control" placeholder="Max">
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="filter-pourcentage-min" class="form-label">% CGT min</label>
+                        <input type="number" id="filter-pourcentage-min" class="form-control" placeholder="Min">
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="filter-pourcentage-max" class="form-label">% CGT max</label>
+                        <input type="number" id="filter-pourcentage-max" class="form-control" placeholder="Max">
+                    </div>
+                </div>
+                <button id="apply-filters" class="btn btn-primary"><i class="fas fa-search"></i> Appliquer</button>
+                <button id="reset-filters" class="btn btn-outline-secondary ms-2"><i class="fas fa-undo"></i> Réinitialiser</button>
+            </div>
+        </div>
+        <!-- Tableau entreprises -->
+        <div class="card fade-in">
+            <div class="card-header"><i class="fas fa-building"></i> Liste des entreprises et PV</div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table id="entreprises-table" class="table table-striped table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Département</th><th>Entreprise</th><th>SIRET</th><th>Inscrits</th><th>Votants</th><th>SVE</th>
+                                <th>CGT</th><th>CFDT</th><th>CGT-FO</th><th>CFTC</th><th>CFE-CGC</th><th>SOLIDAIRES</th><th>UNSA</th><th>AUTRES</th>
+                                <th>Syndicat dom.</th><th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <!-- Statistiques et top -->
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <div class="card fade-in">
+                    <div class="card-header"><i class="fas fa-chart-pie"></i> Statistiques globales</div>
+                    <div class="card-body" id="global-stats"></div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card fade-in">
+                    <div class="card-header"><i class="fas fa-trophy"></i> Top 10 entreprises par inscrits</div>
+                    <div class="card-body" id="top-entreprises"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="footer">Données issues de la mesure du 8 avril 2025</div>
+    <script>
+        let allData = [], filteredData = [], dataTable;
+        
+        // Fonction pour charger les données
+        async function loadData() {
+            try {
+                // Charger la liste des départements
+                const response = await fetch('liste_departements.json');
+                const departements = await response.json();
+                
+                // Remplir le sélecteur de départements
+                const deptSelect = document.getElementById('filter-departement');
+                departements.forEach(dept => {
+                    const option = document.createElement('option');
+                    option.value = dept.code;
+                    option.textContent = `${dept.code} - ${dept.nom}`;
+                    deptSelect.appendChild(option);
+                });
+                
+                // Charger les données de tous les départements
+                for (const dept of departements) {
+                    try {
+                        const csvResponse = await fetch(`PV délections - ${dept.nom} (${dept.code}).csv`);
+                        const csvText = await csvResponse.text();
+                        
+                        // Traiter les données CSV
+                        const deptData = processCSVData(csvText, dept.code, dept.nom);
+                        allData = allData.concat(deptData);
+                    } catch (error) {
+                        console.warn(`Impossible de charger les données pour le département ${dept.code}:`, error);
+                    }
+                }
+                
+                // Initialiser les données filtrées
+                filteredData = [...allData];
+                
+                // Initialiser le tableau DataTables
+                initDataTable();
+                
+                // Mettre à jour les statistiques
+                updateStats();
+                
+                // Mettre à jour le top des entreprises
+                updateTopEntreprises();
+                
+            } catch (error) {
+                console.error('Erreur lors du chargement des données:', error);
+                alert('Erreur lors du chargement des données. Veuillez réessayer.');
+            }
+        }
+        
+        // Fonction pour traiter les données CSV
+        function processCSVData(csvText, deptCode, deptNom) {
+            const lines = csvText.split('\\n');
+            const headers = lines[0].split(';').map(h => h.replace(/"/g, '').trim());
+            const data = [];
+            
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+                
+                const values = line.split(';').map(v => v.replace(/"/g, '').trim());
+                const rowData = {};
+                
+                for (let j = 0; j < headers.length; j++) {
+                    rowData[headers[j]] = values[j] || '';
+                }
+                
+                // Ajouter les informations du département
+                rowData.deptCode = deptCode;
+                rowData.deptNom = deptNom;
+                
+                // Calculer le syndicat dominant
+                const syndicats = ['CGT', 'CFDT', 'CGT-FO', 'CFTC', 'CFE-CGC', 'SOLIDAIRES', 'UNSA', 'AUTRES'];
+                let maxVoix = -1;
+                let syndicatDominant = '';
+                
+                for (const syndicat of syndicats) {
+                    const voix = parseInt(rowData[syndicat] || 0);
+                    if (voix > maxVoix) {
+                        maxVoix = voix;
+                        syndicatDominant = syndicat;
+                    }
+                }
+                
+                rowData.syndicatDominant = syndicatDominant;
+                
+                // Calculer le pourcentage CGT
+                const sve = parseInt(rowData['SVE'] || 0);
+                const cgtVoix = parseInt(rowData['CGT'] || 0);
+                rowData.pourcentageCGT = sve > 0 ? (cgtVoix / sve * 100).toFixed(2) : '0.00';
+                
+                // Déterminer si la CGT est présente
+                rowData.cgtPresent = cgtVoix > 0;
+                
+                data.push(rowData);
+            }
+            
+            return data;
+        }
+        
+        // Fonction pour initialiser le tableau DataTables
+        function initDataTable() {
+            dataTable = $('#entreprises-table').DataTable({
+                data: filteredData,
+                columns: [
+                    { data: null, render: d => `${d.deptCode} - ${d.deptNom}` },
+                    { data: 'Raison Sociale' },
+                    { data: 'SIRET' },
+                    { data: 'Inscrits', render: d => d ? parseInt(d).toLocaleString() : '0' },
+                    { data: 'Votants', render: d => d ? parseInt(d).toLocaleString() : '0' },
+                    { data: 'SVE', render: d => d ? parseInt(d).toLocaleString() : '0' },
+                    { data: 'CGT', render: (d, t, r) => t === 'display' ? `${(parseInt(d) || 0).toLocaleString()} (${r.pourcentageCGT}%)` : d },
+                    { data: 'CFDT', render: (d, t, r) => t === 'display' ? `${(parseInt(d) || 0).toLocaleString()} (${(r.SVE > 0 ? (parseInt(d) / r.SVE * 100).toFixed(2) : '0.00')}%)` : d },
+                    { data: 'CGT-FO', render: (d, t, r) => t === 'display' ? `${(parseInt(d) || 0).toLocaleString()} (${(r.SVE > 0 ? (parseInt(d) / r.SVE * 100).toFixed(2) : '0.00')}%)` : d },
+                    { data: 'CFTC', render: (d, t, r) => t === 'display' ? `${(parseInt(d) || 0).toLocaleString()} (${(r.SVE > 0 ? (parseInt(d) / r.SVE * 100).toFixed(2) : '0.00')}%)` : d },
+                    { data: 'CFE-CGC', render: (d, t, r) => t === 'display' ? `${(parseInt(d) || 0).toLocaleString()} (${(r.SVE > 0 ? (parseInt(d) / r.SVE * 100).toFixed(2) : '0.00')}%)` : d },
+                    { data: 'SOLIDAIRES', render: (d, t, r) => t === 'display' ? `${(parseInt(d) || 0).toLocaleString()} (${(r.SVE > 0 ? (parseInt(d) / r.SVE * 100).toFixed(2) : '0.00')}%)` : d },
+                    { data: 'UNSA', render: (d, t, r) => t === 'display' ? `${(parseInt(d) || 0).toLocaleString()} (${(r.SVE > 0 ? (parseInt(d) / r.SVE * 100).toFixed(2) : '0.00')}%)` : d },
+                    { data: 'AUTRES', render: (d, t, r) => t === 'display' ? `${(parseInt(d) || 0).toLocaleString()} (${(r.SVE > 0 ? (parseInt(d) / r.SVE * 100).toFixed(2) : '0.00')}%)` : d },
+                    { data: 'syndicatDominant', render: d => `<span class="badge badge-${d.toLowerCase().replace(/[^a-z]+/g, '')}">${d}</span>` },
+                    { data: null, render: d => `<button class="btn btn-sm btn-primary view-details" data-dept="${d.deptCode}" data-siret="${d.SIRET}"><i class="fas fa-eye"></i></button>` }
+                ],
+                dom: 'Bfrtip',
+                buttons: ['copy', 'csv', 'excel', 'pdf', 'print'],
+                pageLength: 25,
+                language: { url: '//cdn.datatables.net/plug-ins/1.13.4/i18n/fr-FR.json' },
+                responsive: true,
+                order: [[3, 'desc']]
+            });
+            
+            $('#entreprises-table').on('click', '.view-details', function() {
+                const dept = $(this).data('dept');
+                const siret = $(this).data('siret');
+                window.location.href = `pv_departement.html?dept=${dept}&siret=${siret}`;
+            });
+        }
+        
+        // Fonction pour appliquer les filtres
+        function applyFilters() {
+            const f = {
+                dept: $('#filter-departement').val(),
+                entreprise: $('#filter-entreprise').val().toLowerCase(),
+                syn: $('#filter-syndicat').val(),
+                pres: $('#filter-presence-cgt').val(),
+                minI: $('#filter-inscrits-min').val(),
+                maxI: $('#filter-inscrits-max').val(),
+                minP: $('#filter-pourcentage-min').val(),
+                maxP: $('#filter-pourcentage-max').val()
+            };
+            
+            filteredData = allData.filter(item => {
+                if (f.dept && item.deptCode !== f.dept) return false;
+                if (f.entreprise && !item['Raison Sociale'].toLowerCase().includes(f.entreprise)) return false;
+                if (f.syn && item.syndicatDominant !== f.syn) return false;
+                if (f.pres === 'present' && !item.cgtPresent) return false;
+                if (f.pres === 'absent' && item.cgtPresent) return false;
+                
+                const ins = parseInt(item.Inscrits || 0);
+                if (f.minI && ins < parseInt(f.minI)) return false;
+                if (f.maxI && ins > parseInt(f.maxI)) return false;
+                
+                const pct = parseFloat(item.pourcentageCGT);
+                if (f.minP && pct < parseFloat(f.minP)) return false;
+                if (f.maxP && pct > parseFloat(f.maxP)) return false;
+                
+                return true;
+            });
+            
+            dataTable.clear().rows.add(filteredData).draw();
+            updateStats();
+            updateTopEntreprises();
+        }
+        
+        // Fonction pour réinitialiser les filtres
+        function resetFilters() {
+            ['filter-departement', 'filter-entreprise', 'filter-syndicat', 'filter-presence-cgt', 
+             'filter-inscrits-min', 'filter-inscrits-max', 'filter-pourcentage-min', 'filter-pourcentage-max']
+                .forEach(id => document.getElementById(id).value = '');
+            
+            filteredData = [...allData];
+            dataTable.clear().rows.add(filteredData).draw();
+            updateStats();
+            updateTopEntreprises();
+        }
+        
+        // Fonction pour mettre à jour les statistiques
+        function updateStats() {
+            const stats = {
+                totalEntreprises: filteredData.length,
+                totalInscrits: 0,
+                totalVotants: 0,
+                totalSVE: 0,
+                voix: {},
+                pourcentages: {},
+                syndicatDominant: {}
+            };
+            
+            ['CGT', 'CFDT', 'CGT-FO', 'CFTC', 'CFE-CGC', 'SOLIDAIRES', 'UNSA', 'AUTRES'].forEach(s => {
+                stats.voix[s] = 0;
+                stats.pourcentages[s] = 0;
+                stats.syndicatDominant[s] = 0;
+            });
+            
+            filteredData.forEach(item => {
+                stats.totalInscrits += parseInt(item.Inscrits || 0);
+                stats.totalVotants += parseInt(item.Votants || 0);
+                stats.totalSVE += parseInt(item.SVE || 0);
+                
+                ['CGT', 'CFDT', 'CGT-FO', 'CFTC', 'CFE-CGC', 'SOLIDAIRES', 'UNSA', 'AUTRES'].forEach(s => {
+                    stats.voix[s] += parseInt(item[s] || 0);
+                });
+                
+                if (item.syndicatDominant) {
+                    stats.syndicatDominant[item.syndicatDominant]++;
+                }
+            });
+            
+            Object.keys(stats.voix).forEach(s => {
+                stats.pourcentages[s] = stats.totalSVE > 0 ? ((stats.voix[s] / stats.totalSVE * 100).toFixed(2)) : '0.00';
+            });
+            
+            const cont = document.getElementById('global-stats');
+            const fmt = n => Math.round(n).toLocaleString();
+            
+            let html = `<div class="row text-center">`;
+            [['Entreprises', 'totalEntreprises'], ['Inscrits', 'totalInscrits'], ['Votants', 'totalVotants'], ['SVE', 'totalSVE']]
+                .forEach(([label, k]) => {
+                    html += `<div class="col"><h3>${fmt(stats[k])}</h3><p>${label}</p></div>`;
+                });
+            
+            html += `</div><hr><table class="table table-sm"><thead><tr><th>Syndicat</th><th>Voix</th><th>%</th><th>Entreprises dom.</th></tr></thead><tbody>`;
+            
+            Object.keys(stats.voix).forEach(s => {
+                html += `<tr><td>${s}</td><td>${fmt(stats.voix[s])}</td><td>${stats.pourcentages[s]}%</td><td>${stats.syndicatDominant[s]}</td></tr>`;
+            });
+            
+            html += `</tbody></table>`;
+            cont.innerHTML = html;
+        }
+        
+        // Fonction pour mettre à jour le top des entreprises
+        function updateTopEntreprises() {
+            const top = filteredData.slice()
+                .sort((a, b) => parseInt(b.Inscrits || 0) - parseInt(a.Inscrits || 0))
+                .slice(0, 10);
+            
+            const cont = document.getElementById('top-entreprises');
+            let html = '<div class="list-group">';
+            
+            top.forEach(item => {
+                html += `<a href="pv_departement.html?dept=${item.deptCode}&siret=${item.SIRET}" 
+                           class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                           <span>${item['Raison Sociale']} <small class="text-muted">(${item.deptCode})</small></span>
+                           <span class="badge bg-primary rounded-pill">${parseInt(item.Inscrits || 0).toLocaleString()}</span>
+                         </a>`;
+            });
+            
+            html += '</div>';
+            cont.innerHTML = html;
+        }
+        
+        // Gestion du mode sombre
+        const darkModeToggle = document.getElementById('dark-mode-toggle');
+        const body = document.body;
+        
+        if (localStorage.getItem('darkMode') === 'true') {
+            body.classList.add('dark-mode');
+            darkModeToggle.innerHTML = '<i class="bi bi-sun"></i> Mode clair';
+        }
+        
+        darkModeToggle.addEventListener('click', () => {
+            body.classList.toggle('dark-mode');
+            const isDark = body.classList.contains('dark-mode');
+            localStorage.setItem('darkMode', isDark);
+            darkModeToggle.innerHTML = isDark ? '<i class="bi bi-sun"></i> Mode clair' : '<i class="bi bi-moon"></i> Mode sombre';
+        });
+        
+        // Initialisation des événements
+        document.addEventListener('DOMContentLoaded', loadData);
+        document.getElementById('apply-filters').addEventListener('click', applyFilters);
+        document.getElementById('reset-filters').addEventListener('click', resetFilters);
+    </script>
+</body>
+</html>

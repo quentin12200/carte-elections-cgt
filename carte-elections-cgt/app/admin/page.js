@@ -37,7 +37,7 @@ export default function AdminPage() {
       });
       
       if (!response.ok) {
-        throw new Error('Erreur lors de l\'approbation');
+        throw new Error("Erreur lors de l'approbation");
       }
       
       // Mettre à jour la liste des demandes
@@ -56,7 +56,7 @@ export default function AdminPage() {
       });
       
       if (!response.ok) {
-        throw new Error('Erreur lors du rejet');
+        throw new Error("Erreur lors du rejet");
       }
       
       // Mettre à jour la liste des demandes
@@ -126,12 +126,14 @@ export default function AdminPage() {
                           <button
                             className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm"
                             onClick={() => handleApprove(request.id, request.user_id)}
+                            suppressHydrationWarning
                           >
                             Valider
                           </button>
                           <button
                             className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm"
                             onClick={() => handleReject(request.id, request.user_id)}
+                            suppressHydrationWarning
                           >
                             Refuser
                           </button>

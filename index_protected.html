@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cartographie des Résultats Syndicaux - CGT</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            padding-top: 56px;
+        }
+        .navbar {
+            background-color: #e30613;
+        }
+        .content {
+            padding: 20px;
+        }
+        .card {
+            margin-bottom: 20px;
+            transition: transform 0.3s;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="#">Cartographie CGT</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="index.html">Accueil</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="carte_syndicale.html">Carte Syndicale</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="toutes_entreprises.html">Entreprises</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="pv_departement.html">PV par Département</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="carte_data_csv.html">Données CSV</a>
+                    </li>
+                </ul>
+                <button id="logout-btn" class="btn btn-outline-light">Déconnexion</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container content">
+        <div class="row">
+            <div class="col-12">
+                <h1 class="mb-4">Bienvenue sur l'outil de cartographie des résultats syndicaux</h1>
+                <p class="lead">
+                    Cet outil vous permet de visualiser et d'analyser les données issues de la mesure de représentativité pour le cycle 4.
+                </p>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Carte Syndicale</h5>
+                        <p class="card-text">Visualisez la répartition géographique des résultats syndicaux.</p>
+                        <a href="carte_syndicale.html" class="btn btn-danger">Accéder</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Liste des Entreprises</h5>
+                        <p class="card-text">Consultez la liste complète des entreprises avec leurs résultats.</p>
+                        <a href="toutes_entreprises.html" class="btn btn-danger">Accéder</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">PV par Département</h5>
+                        <p class="card-text">Analysez les procès-verbaux par département.</p>
+                        <a href="pv_departement.html" class="btn btn-danger">Accéder</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Vérifier si l'utilisateur est authentifié
+        document.addEventListener('DOMContentLoaded', function() {
+            const authenticated = localStorage.getItem('authenticated');
+            
+            if (!authenticated || authenticated !== 'true') {
+                // Rediriger vers la page de connexion
+                window.location.href = 'login.html';
+            }
+            
+            // Gérer la déconnexion
+            document.getElementById('logout-btn').addEventListener('click', function() {
+                localStorage.removeItem('authenticated');
+                window.location.href = 'login.html';
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,5 +1,8 @@
 import './globals.css';
 import { Metadata } from 'next';
+import Link from 'next/link';
+import { AuthProvider } from '@/context/AuthContext';
+import NavBar from '@/components/NavBar';
 
 export const metadata: Metadata = {
   title: 'Cartographie des Résultats Syndicaux - CGT',
@@ -14,22 +17,15 @@ export default function RootLayout({
   return (
     <html lang="fr">
       <body>
-        <header className="bg-red-600 text-white p-4">
-          <div className="container mx-auto flex justify-between items-center">
-            <a href="/" className="text-xl font-bold">Cartographie CGT</a>
-            <nav>
-              <ul className="flex space-x-4">
-                <li>
-                  <a href="/login" className="hover:underline">Connexion</a>
-                </li>
-                <li>
-                  <a href="/inscription" className="hover:underline">Inscription</a>
-                </li>
-              </ul>
-            </nav>
-          </div>
-        </header>
-        {children}
+        <AuthProvider>
+          <header className="bg-red-600 text-white p-4">
+            <div className="container mx-auto flex justify-between items-center">
+              <Link href="/" className="text-xl font-bold">Cartographie CGT</Link>
+              <NavBar />
+            </div>
+          </header>
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );
