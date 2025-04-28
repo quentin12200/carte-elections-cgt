@@ -122,7 +122,17 @@
                 </div>
                 <h1>Cartographie des Résultats Syndicaux</h1>
             </div>
+            <div style="position: absolute; top: 20px; right: 20px;">
+                <button id="logout-btn" class="btn btn-outline-light" onclick="logout()">Déconnexion</button>
+            </div>
             <h4>Mesure de représentativité du 8 avril 2025 pour le cycle 4</h4>
+            
+            <script>
+                function logout() {
+                    localStorage.removeItem('authenticated');
+                    window.location.href = 'login.html';
+                }
+            </script>
         </div>
         
         <div class="content">
