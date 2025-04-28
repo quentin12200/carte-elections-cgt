@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import Script from 'next/script';
 
-export default function cartedatacsvPage () {
+export default function CarteDataCsvPage() {
   useEffect(() => {
     // Charger les scripts externes si nécessaire
     const loadExternalScripts = async () => {

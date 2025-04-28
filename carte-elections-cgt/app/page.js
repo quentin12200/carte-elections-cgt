@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import Script from 'next/script';
 
-export default function indexPage () {
+export default function IndexPage() {
   useEffect(() => {
     // Charger les scripts externes si nécessaire
     const loadExternalScripts = async () => {
