@@ -21,6 +21,12 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Fonction pour ajouter le bouton de déconnexion
     function addLogoutButton() {
+        // Vérifier si un bouton de déconnexion existe déjà
+        if (document.getElementById('logout-btn')) {
+            // Un bouton de déconnexion existe déjà, ne pas en ajouter un autre
+            return;
+        }
+        
         // Essayer d'abord d'ajouter à la navbar si elle existe
         const navbar = document.querySelector('.navbar-nav');
         if (navbar) {
@@ -30,6 +36,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Créer le bouton de déconnexion
             const logoutButton = document.createElement('button');
+            logoutButton.id = 'logout-btn';
             logoutButton.className = 'btn btn-outline-light btn-sm';
             logoutButton.textContent = 'Déconnexion';
             logoutButton.onclick = logout;
@@ -42,7 +49,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        // Si la navbar n'existe pas, créer un bouton flottant
+        // Si la navbar n'existe pas et qu'aucun bouton n'existe déjà, créer un bouton flottant
         const logoutDiv = document.createElement('div');
         logoutDiv.style.position = 'fixed';
         logoutDiv.style.top = '20px';
@@ -50,6 +57,7 @@ document.addEventListener('DOMContentLoaded', function() {
         logoutDiv.style.zIndex = '9999';
         
         const logoutButton = document.createElement('button');
+        logoutButton.id = 'logout-btn';
         logoutButton.className = 'btn btn-danger';
         logoutButton.innerHTML = '<i class="fas fa-sign-out-alt"></i> Déconnexion';
         logoutButton.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
