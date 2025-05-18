@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Détails par département - Bourgogne-Franche-Comté</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- DataTables CSS & JS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css">
+    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
+    <!-- DataTables Buttons Extension -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.3.6/css/buttons.bootstrap5.min.css">
+    <script src="https://cdn.datatables.net/buttons/2.3.6/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.bootstrap5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.html5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.print.min.js"></script>
+    <style>
+        .cgt-logo {
+            height: 50px;
+            margin-right: 15px;
+        }
+        .dept-selector {
+            margin: 20px 0;
+        }
+        .dept-stat-item {
+            text-align: center;
+            padding: 15px;
+            border-radius: 5px;
+            background-color: #f8f9fa;
+            margin-bottom: 15px;
+        }
+        .dept-stat-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #e63946;
+        }
+        .dept-stat-label {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <header class="d-flex justify-content-between align-items-center mb-4">
+            <div class="d-flex align-items-center">
+                <img src="logo-cgt.png" alt="Logo CGT" class="cgt-logo">
+                <h1>Détails par département - Bourgogne-Franche-Comté</h1>
+            </div>
+            <a href="index_bfc.html" class="btn btn-outline-secondary">Retour</a>
+        </header>
+
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Analyse détaillée par département</h5>
+                        <p class="card-text">Bourgogne-Franche-Comté - Mesure de représentativité du 8 avril 2025</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-12">
+                <h3>Sélectionnez un département</h3>
+                <div class="dept-selector d-flex flex-wrap gap-2">
+                    <button class="btn btn-outline-danger active" data-dept="21">Côte-d'Or (21)</button>
+                    <button class="btn btn-outline-danger" data-dept="25">Doubs (25)</button>
+                    <button class="btn btn-outline-danger" data-dept="39">Jura (39)</button>
+                    <button class="btn btn-outline-danger" data-dept="58">Nièvre (58)</button>
+                    <button class="btn btn-outline-danger" data-dept="70">Haute-Saône (70)</button>
+                    <button class="btn btn-outline-danger" data-dept="71">Saône-et-Loire (71)</button>
+                    <button class="btn btn-outline-danger" data-dept="89">Yonne (89)</button>
+                    <button class="btn btn-outline-danger" data-dept="90">Territoire de Belfort (90)</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner-border text-danger" role="status">
+                <span class="visually-hidden">Chargement...</span>
+            </div>
+            <p class="mt-2">Chargement des données...</p>
+        </div>
+
+        <div class="alert alert-danger" id="error-container" style="display: none;">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            <span id="error-message">Une erreur s'est produite.</span>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-danger text-white">
+                        <h3 id="dept-title">Côte-d'Or (21)</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="row" id="dept-stats">
+                            <!-- Les statistiques seront insérées ici par JavaScript -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h4>Résultats par syndicat</h4>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-striped" id="syndicats-table">
+                            <thead>
+                                <tr>
+                                    <th>Syndicat</th>
+                                    <th>Voix</th>
+                                    <th>Pourcentage</th>
+                                    <th>Implantation</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Les données seront insérées ici par JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h4>Répartition par type d'élections</h4>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-striped" id="elections-table">
+                            <thead>
+                                <tr>
+                                    <th>Type</th>
+                                    <th>Voix</th>
+                                    <th>Pourcentage</th>
+                                    <th>Entreprises</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Les données seront insérées ici par JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h4>Répartition par type d'élections pour chaque syndicat</h4>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-striped" id="syndicats-elections-table">
+                            <thead>
+                                <tr>
+                                    <th>Syndicat</th>
+                                    <th>CSE</th>
+                                    <th>TPE</th>
+                                    <th>AGRI</th>
+                                    <th>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Les données seront insérées ici par JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4 mb-5">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h4>Liste des entreprises</h4>
+                    </div>
+                    <div class="card-body" id="entreprises-table-container">
+                        <!-- Le tableau des entreprises sera inséré ici par JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4 mb-4">
+            <div class="col-12 text-center">
+                <a href="index_bfc.html" class="btn btn-outline-danger">
+                    <i class="bi bi-arrow-left"></i> Retour à l'accueil
+                </a>
+                <a href="carte_bfc.html" class="btn btn-outline-danger">
+                    <i class="bi bi-map"></i> Carte interactive
+                </a>
+                <a href="comparaison_bfc_national.html" class="btn btn-outline-danger">
+                    <i class="bi bi-bar-chart"></i> Comparaison BFC/National
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Liste des départements de la Bourgogne-Franche-Comté
+        const departementsBFC = ['21', '25', '39', '58', '70', '71', '89', '90'];
+
+        // Noms des départements
+        const departementNames = {
+            '21': 'Côte-d\'Or',
+            '25': 'Doubs',
+            '39': 'Jura',
+            '58': 'Nièvre',
+            '70': 'Haute-Saône',
+            '71': 'Saône-et-Loire',
+            '89': 'Yonne',
+            '90': 'Territoire de Belfort'
+        };
+
+        // Couleurs pour les syndicats
+        const syndicatColors = {
+            'CGT': '#e30613',
+            'CFDT': '#ff5f00',
+            'FO': '#ffcc00',
+            'CFE-CGC': '#0070c0',
+            'CFTC': '#00b050',
+            'UNSA': '#7030a0',
+            'SUD': '#ff0000'
+        };
+
+        // Fonction pour afficher/masquer l'indicateur de chargement
+        function toggleLoading(show) {
+            document.getElementById('loading').style.display = show ? 'block' : 'none';
+        }
+        
+        // Charger les données des types d'élections depuis le CSV
+        function loadElectionTypesData(deptCode) {
+            return fetch('resultats_departements_par_type.csv')
+                .then(response => {
+                    if (!response.ok) throw new Error(`Erreur HTTP: ${response.status}`);
+                    return response.text();
+                })
+                .then(csvText => {
+                    const lines = csvText.split('\n');
+                    const headers = lines[0].split(',');
+                    let deptData = null;
+                    
+                    // Parcourir chaque ligne pour trouver le département demandé
+                    for (let i = 1; i < lines.length; i++) {
+                        if (!lines[i].trim()) continue;
+                        
+                        const values = lines[i].split(',');
+                        const currentDeptCode = values[0];
+                        
+                        if (currentDeptCode === deptCode) {
+                            deptData = {
+                                code: deptCode,
+                                nom: values[1],
+                                typeElections: {
+                                    CSE: {
+                                        voix: parseInt(values[6]) + parseInt(values[7]) + parseInt(values[8]) + 
+                                              parseInt(values[9]) + parseInt(values[10]) + parseInt(values[11]) + 
+                                              parseInt(values[12]) + parseInt(values[13]),
+                                        entreprises: 0 // Nous n'avons pas cette information dans le CSV
+                                    },
+                                    TPE: {
+                                        voix: parseInt(values[16]) + parseInt(values[17]) + parseInt(values[18]) + 
+                                              parseInt(values[19]) + parseInt(values[20]) + parseInt(values[21]) + 
+                                              parseInt(values[22]) + parseInt(values[23]),
+                                        entreprises: 0
+                                    },
+                                    AGRI: {
+                                        voix: parseInt(values[26]) + parseInt(values[27]) + parseInt(values[28]) + 
+                                              parseInt(values[29]) + parseInt(values[30]) + parseInt(values[31]) + 
+                                              parseInt(values[32]) + parseInt(values[33]),
+                                        entreprises: 0
+                                    }
+                                },
+                                syndicats: {
+                                    CGT: { 
+                                        voix: parseInt(values[37]), 
+                                        implantation: 0,
+                                        parType: {
+                                            CSE: parseInt(values[6]),
+                                            TPE: parseInt(values[16]),
+                                            AGRI: parseInt(values[26])
+                                        }
+                                    },
+                                    CFDT: { 
+                                        voix: parseInt(values[38]), 
+                                        implantation: 0,
+                                        parType: {
+                                            CSE: parseInt(values[7]),
+                                            TPE: parseInt(values[17]),
+                                            AGRI: parseInt(values[27])
+                                        }
+                                    },
+                                    FO: { 
+                                        voix: parseInt(values[39]), 
+                                        implantation: 0,
+                                        parType: {
+                                            CSE: parseInt(values[8]),
+                                            TPE: parseInt(values[18]),
+                                            AGRI: parseInt(values[28])
+                                        }
+                                    },
+                                    'CFE-CGC': { 
+                                        voix: parseInt(values[41]), 
+                                        implantation: 0,
+                                        parType: {
+                                            CSE: parseInt(values[10]),
+                                            TPE: parseInt(values[20]),
+                                            AGRI: parseInt(values[30])
+                                        }
+                                    },
+                                    CFTC: { 
+                                        voix: parseInt(values[40]), 
+                                        implantation: 0,
+                                        parType: {
+                                            CSE: parseInt(values[9]),
+                                            TPE: parseInt(values[19]),
+                                            AGRI: parseInt(values[29])
+                                        }
+                                    },
+                                    UNSA: { 
+                                        voix: parseInt(values[43]), 
+                                        implantation: 0,
+                                        parType: {
+                                            CSE: parseInt(values[12]),
+                                            TPE: parseInt(values[22]),
+                                            AGRI: parseInt(values[32])
+                                        }
+                                    },
+                                    SUD: { 
+                                        voix: parseInt(values[42]), 
+                                        implantation: 0,
+                                        parType: {
+                                            CSE: parseInt(values[11]),
+                                            TPE: parseInt(values[21]),
+                                            AGRI: parseInt(values[31])
+                                        }
+                                    }
+                                }
+                            };
+                            
+                            // Calculer les pourcentages pour les types d'élections
+                            const totalVoix = deptData.typeElections.CSE.voix + 
+                                             deptData.typeElections.TPE.voix + 
+                                             deptData.typeElections.AGRI.voix;
+                            
+                            if (totalVoix > 0) {
+                                deptData.typeElections.CSE.pourcentage = 
+                                    (deptData.typeElections.CSE.voix / totalVoix) * 100;
+                                deptData.typeElections.TPE.pourcentage = 
+                                    (deptData.typeElections.TPE.voix / totalVoix) * 100;
+                                deptData.typeElections.AGRI.pourcentage = 
+                                    (deptData.typeElections.AGRI.voix / totalVoix) * 100;
+                            }
+                            
+                            break;
+                        }
+                    }
+                    
+                    return deptData;
+                })
+                .catch(error => {
+                    console.error('Erreur lors du chargement des données CSV:', error);
+                    return null;
+                });
+        }
+
+        // Fonction pour charger les données d'un département
+        function loadDepartementData(deptCode) {
+            toggleLoading(true);
+            console.log(`Début du chargement des données pour le département ${deptCode}`);
+            
+            const jsonUrl = `json_data/departement_${deptCode}.json`;
+            
+            // Charger à la fois les données JSON et CSV
+            return Promise.all([
+                fetch(jsonUrl)
+                    .then(response => {
+                        if (!response.ok) throw new Error(`Erreur HTTP: ${response.status}`);
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (!data || !Array.isArray(data)) throw new Error('Format de données invalide');
+                        return processDepartementData(data, deptCode);
+                    }),
+                loadElectionTypesData(deptCode)
+            ])
+                .then(([jsonData, csvData]) => {
+                    if (!jsonData) throw new Error('Données JSON invalides');
+                    
+                    // Fusionner les données JSON et CSV si disponibles
+                    if (csvData) {
+                        // Mettre à jour les données par type d'élection
+                        jsonData.typeElections = csvData.typeElections;
+                        
+                        // Mettre à jour les données par syndicat et par type
+                        Object.keys(jsonData.syndicats).forEach(syndicat => {
+                            if (csvData.syndicats[syndicat]) {
+                                jsonData.syndicats[syndicat].parType = csvData.syndicats[syndicat].parType;
+                            }
+                        });
+                    }
+                    
+                    updateUI(jsonData);
+                    toggleLoading(false);
+                    return jsonData; // Retourner les données pour permettre le chainage des promesses
+                })
+                .catch(error => {
+                    console.error(error);
+                    if (document.getElementById('error-message')) {
+                        document.getElementById('error-message').textContent = `Erreur lors du chargement des données: ${error.message}`;
+                        document.getElementById('error-container').style.display = 'block';
+                    }
+                    toggleLoading(false);
+                    throw error; // Propager l'erreur pour permettre le chainage des promesses
+                });
+        }
+
+        // Fonction pour traiter les données d'un département
+        function processDepartementData(data, deptCode) {
+            // Créer l'objet de données traitées
+            const processedData = {
+                code: deptCode,
+                nom: departementNames[deptCode] || `Département ${deptCode}`,
+                syndicats: {
+                    CGT: { voix: 0, implantation: 0, parType: { CSE: 0, TPE: 0, AGRI: 0 } },
+                    CFDT: { voix: 0, implantation: 0, parType: { CSE: 0, TPE: 0, AGRI: 0 } },
+                    FO: { voix: 0, implantation: 0, parType: { CSE: 0, TPE: 0, AGRI: 0 } },
+                    'CFE-CGC': { voix: 0, implantation: 0, parType: { CSE: 0, TPE: 0, AGRI: 0 } },
+                    CFTC: { voix: 0, implantation: 0, parType: { CSE: 0, TPE: 0, AGRI: 0 } },
+                    UNSA: { voix: 0, implantation: 0, parType: { CSE: 0, TPE: 0, AGRI: 0 } },
+                    SUD: { voix: 0, implantation: 0, parType: { CSE: 0, TPE: 0, AGRI: 0 } }
+                },
+                typeElections: {
+                    CSE: { voix: 0, entreprises: 0 },
+                    TPE: { voix: 0, entreprises: 0 },
+                    AGRI: { voix: 0, entreprises: 0 }
+                },
+                entreprises: []
+            };
+            
+            // Compteurs pour les totaux
+            let totalVoix = 0;
+            
+            // Correspondance entre les noms de syndicats dans les données et nos noms
+            const syndicatMapping = {
+                'CGT': 'CGT',
+                'CFDT': 'CFDT',
+                'CGT-FO': 'FO',
+                'FO': 'FO',
+                'CFE-CGC': 'CFE-CGC',
+                'CFTC': 'CFTC',
+                'UNSA': 'UNSA',
+                'SOLIDAIRES': 'SUD',
+                'SUD': 'SUD'
+            };
+            
+            // Ensemble pour suivre les SIRET uniques par type d'élection
+            const siretParType = {
+                CSE: new Set(),
+                TPE: new Set(),
+                AGRI: new Set()
+            };
+            
+            // Traiter chaque entreprise
+            if (Array.isArray(data)) {
+                data.forEach(entreprise => {
+                    // Vérifier si l'entreprise a des données valides
+                    if (!entreprise || typeof entreprise !== 'object') {
+                        return;
+                    }
+                    
+                    // Récupérer le type d'élection
+                    const typeElection = entreprise.Type || 'CSE';
+                    
+                    // Créer un objet entreprise
+                    const entrepriseObj = {
+                        siret: entreprise.SIRET || '',
+                        nom: entreprise['Raison sociale'] || '',
+                        ville: entreprise.Ville || '',
+                        departement: deptCode,
+                        salaries: parseInt(entreprise.Inscrits) || 0,
+                        typeElection: typeElection,
+                        syndicats: {}
+                    };
+                    
+                    // Ajouter le SIRET à l'ensemble correspondant au type d'élection
+                    if (entrepriseObj.siret && processedData.typeElections[typeElection]) {
+                        siretParType[typeElection].add(entrepriseObj.siret);
+                    }
+                    
+                    // Compteur pour les voix de cette entreprise
+                    let entrepriseVoix = 0;
+                    
+                    // Parcourir tous les champs de l'entreprise pour trouver les syndicats
+                    Object.keys(entreprise).forEach(key => {
+                        // Vérifier si la clé correspond à un syndicat
+                        if (syndicatMapping[key]) {
+                            const syndicat = syndicatMapping[key];
+                            const voix = parseFloat(entreprise[key]) || 0;
+                            
+                            if (voix > 0) {
+                                // Ajouter les voix au syndicat dans l'entreprise
+                                entrepriseObj.syndicats[syndicat] = { voix: voix };
+                                
+                                // Ajouter les voix au total du syndicat dans le département
+                                processedData.syndicats[syndicat].voix += voix;
+                                
+                                // Ajouter les voix par type d'élection pour ce syndicat
+                                if (processedData.syndicats[syndicat].parType[typeElection] !== undefined) {
+                                    processedData.syndicats[syndicat].parType[typeElection] += voix;
+                                }
+                                
+                                // Incrémenter l'implantation du syndicat si présent dans l'entreprise
+                                processedData.syndicats[syndicat].implantation++;
+                                
+                                // Ajouter au total des voix
+                                totalVoix += voix;
+                                entrepriseVoix += voix;
+                                
+                                // Ajouter les voix au type d'élection
+                                if (processedData.typeElections[typeElection]) {
+                                    processedData.typeElections[typeElection].voix += voix;
+                                }
+                            }
+                        }
+                    });
+                    
+                    // Ajouter l'entreprise aux données du département
+                    processedData.entreprises.push(entrepriseObj);
+                });
+            }
+            
+            // Mettre à jour le nombre d'entreprises par type d'élection
+            Object.keys(siretParType).forEach(type => {
+                if (processedData.typeElections[type]) {
+                    processedData.typeElections[type].entreprises = siretParType[type].size;
+                }
+            });
+            
+            // Calculer les pourcentages pour chaque type d'élection
+            let totalVoixTypes = 0;
+            Object.values(processedData.typeElections).forEach(typeData => {
+                totalVoixTypes += typeData.voix;
+            });
+            
+            Object.keys(processedData.typeElections).forEach(type => {
+                const typeData = processedData.typeElections[type];
+                typeData.pourcentage = totalVoixTypes > 0 ? (typeData.voix / totalVoixTypes * 100) : 0;
+            });
+            
+            // Calculer les pourcentages pour chaque syndicat
+            Object.keys(processedData.syndicats).forEach(syndicat => {
+                const syndicatData = processedData.syndicats[syndicat];
+                
+                // Calculer le pourcentage de voix
+                syndicatData.pourcentage = totalVoix > 0 ? (syndicatData.voix / totalVoix * 100) : 0;
+            });
+            
+            return processedData;
+        }
+
+        // Fonction pour mettre à jour l'interface utilisateur
+        function updateUI(data) {
+            if (!data) {
+                console.error('Pas de données à afficher');
+                toggleLoading(false);
+                return;
+            }
+            
+            // Mettre à jour le titre
+            document.getElementById('dept-title').textContent = `${data.nom} (${data.code})`;
+            
+            // Mettre à jour les statistiques
+            updateStats(data);
+            
+            // Mettre à jour le tableau des syndicats
+            updateSyndicatsTable(data);
+            
+            // Mettre à jour le tableau des types d'élections
+            updateElectionsTable(data);
+            
+            // Mettre à jour le tableau des répartitions par type d'élections pour chaque syndicat
+            updateSyndicatsElectionsTable(data);
+            
+            // Mettre à jour le tableau des entreprises
+            updateEntreprisesTable(data);
+            
+            toggleLoading(false);
+        }
+
+        // Fonction pour mettre à jour les statistiques
+        function updateStats(data) {
+            const statsContainer = document.getElementById('dept-stats');
+            statsContainer.innerHTML = '';
+            
+            // Créer les statistiques
+            const cgtData = data.syndicats.CGT;
+            const totalEntreprises = data.entreprises.length;
+            const totalSalaries = data.entreprises.reduce((sum, e) => sum + (e.salaries || 0), 0);
+            
+            // Créer les éléments de statistiques
+            const stats = [
+                { value: cgtData.pourcentage ? cgtData.pourcentage.toFixed(2) + '%' : 'N/A', label: 'CGT' },
+                { value: totalEntreprises.toLocaleString(), label: 'Entreprises' },
+                { value: totalSalaries.toLocaleString(), label: 'Salariés' },
+                { value: cgtData.implantation ? cgtData.implantation.toLocaleString() : 'N/A', label: 'Implantations CGT' }
+            ];
+            
+            // Ajouter les statistiques au conteneur
+            stats.forEach(stat => {
+                const col = document.createElement('div');
+                col.className = 'col-md-3 col-sm-6 mb-3';
+                
+                const statItem = document.createElement('div');
+                statItem.className = 'dept-stat-item';
+                
+                const valueDiv = document.createElement('div');
+                valueDiv.className = 'dept-stat-value';
+                valueDiv.textContent = stat.value;
+                
+                const labelDiv = document.createElement('div');
+                labelDiv.className = 'dept-stat-label';
+                labelDiv.textContent = stat.label;
+                
+                statItem.appendChild(valueDiv);
+                statItem.appendChild(labelDiv);
+                col.appendChild(statItem);
+                
+                statsContainer.appendChild(col);
+            });
+        }
+
+        // Fonction pour mettre à jour le tableau des syndicats
+        function updateSyndicatsTable(data) {
+            const tableBody = document.querySelector('#syndicats-table tbody');
+            tableBody.innerHTML = '';
+            
+            // Trier les syndicats par pourcentage décroissant
+            const syndicats = Object.entries(data.syndicats)
+                .sort((a, b) => b[1].pourcentage - a[1].pourcentage);
+            
+            // Ajouter les données pour chaque syndicat
+            syndicats.forEach(([syndicat, syndicatData]) => {
+                const row = document.createElement('tr');
+                
+                const color = syndicatColors[syndicat] || '#999';
+                
+                row.innerHTML = `
+                    <td><span style="display: inline-block; width: 15px; height: 15px; background-color: ${color}; margin-right: 5px; border-radius: 3px;"></span> ${syndicat}</td>
+                    <td>${syndicatData.voix ? syndicatData.voix.toLocaleString() : '0'}</td>
+                    <td>${syndicatData.pourcentage ? syndicatData.pourcentage.toFixed(2) + '%' : '0.00%'}</td>
+                    <td>${syndicatData.implantation ? syndicatData.implantation.toLocaleString() : '0'}</td>
+                `;
+                
+                tableBody.appendChild(row);
+            });
+        }
+        
+        // Fonction pour mettre à jour le tableau des types d'élections
+        function updateElectionsTable(data) {
+            const tableBody = document.querySelector('#elections-table tbody');
+            tableBody.innerHTML = '';
+            
+            // Trier les types d'élections par pourcentage décroissant
+            const typesElections = Object.entries(data.typeElections)
+                .sort((a, b) => b[1].pourcentage - a[1].pourcentage);
+            
+            // Ajouter les données pour chaque type d'élection
+            typesElections.forEach(([type, typeData]) => {
+                // Ne pas afficher les types sans données
+                if (typeData.voix === 0 && typeData.entreprises === 0) {
+                    return;
+                }
+                
+                const row = document.createElement('tr');
+                
+                // Choisir une couleur en fonction du type
+                let color;
+                switch(type) {
+                    case 'CSE': color = '#4CAF50'; break; // Vert
+                    case 'TPE': color = '#2196F3'; break; // Bleu
+                    case 'AGRI': color = '#FFC107'; break; // Jaune
+                    default: color = '#607D8B';           // Gris-bleu
+                }
+                
+                row.innerHTML = `
+                    <td><span style="display: inline-block; width: 15px; height: 15px; background-color: ${color}; margin-right: 5px; border-radius: 3px;"></span> ${type}</td>
+                    <td>${typeData.voix ? typeData.voix.toLocaleString() : '0'}</td>
+                    <td>${typeData.pourcentage ? typeData.pourcentage.toFixed(2) + '%' : '0.00%'}</td>
+                    <td>${typeData.entreprises ? typeData.entreprises.toLocaleString() : '0'}</td>
+                `;
+                
+                tableBody.appendChild(row);
+            });
+        }
+
+        // Fonction pour mettre à jour le tableau de répartition par type d'élections pour chaque syndicat
+        function updateSyndicatsElectionsTable(data) {
+            const tableBody = document.querySelector('#syndicats-elections-table tbody');
+            tableBody.innerHTML = '';
+            
+            // Trier les syndicats par nombre total de voix décroissant
+            const syndicats = Object.entries(data.syndicats)
+                .sort((a, b) => b[1].voix - a[1].voix);
+            
+            // Utilisation des couleurs de syndicats définies globalement
+            
+            // Ajouter une ligne pour chaque syndicat
+            syndicats.forEach(([syndicat, syndicatData]) => {
+                // Ne pas afficher les syndicats sans voix
+                if (syndicatData.voix === 0) return;
+                
+                const row = document.createElement('tr');
+                const color = syndicatColors[syndicat] || '#999';
+                
+                // Calculer les pourcentages par type d'élection
+                const cseVoix = syndicatData.parType.CSE || 0;
+                const tpeVoix = syndicatData.parType.TPE || 0;
+                const agriVoix = syndicatData.parType.AGRI || 0;
+                const totalVoix = syndicatData.voix;
+                
+                const csePct = totalVoix > 0 ? ((cseVoix / totalVoix) * 100).toFixed(1) : '0.0';
+                const tpePct = totalVoix > 0 ? ((tpeVoix / totalVoix) * 100).toFixed(1) : '0.0';
+                const agriPct = totalVoix > 0 ? ((agriVoix / totalVoix) * 100).toFixed(1) : '0.0';
+                
+                row.innerHTML = `
+                    <td>
+                        <span style="display: inline-block; width: 15px; height: 15px; background-color: ${color}; margin-right: 5px; border-radius: 3px;"></span>
+                        ${syndicat}
+                    </td>
+                    <td>
+                        ${cseVoix.toLocaleString()} <small class="text-muted">(${csePct}%)</small>
+                    </td>
+                    <td>
+                        ${tpeVoix.toLocaleString()} <small class="text-muted">(${tpePct}%)</small>
+                    </td>
+                    <td>
+                        ${agriVoix.toLocaleString()} <small class="text-muted">(${agriPct}%)</small>
+                    </td>
+                    <td>
+                        <strong>${totalVoix.toLocaleString()}</strong>
+                    </td>
+                `;
+                
+                tableBody.appendChild(row);
+            });
+            
+            // Ajouter une ligne de total
+            const totalRow = document.createElement('tr');
+            totalRow.className = 'table-secondary';
+            
+            // Calculer les totaux par type d'élection
+            const totalCSE = Object.values(data.syndicats).reduce((sum, s) => sum + (s.parType.CSE || 0), 0);
+            const totalTPE = Object.values(data.syndicats).reduce((sum, s) => sum + (s.parType.TPE || 0), 0);
+            const totalAGRI = Object.values(data.syndicats).reduce((sum, s) => sum + (s.parType.AGRI || 0), 0);
+            const grandTotal = totalCSE + totalTPE + totalAGRI;
+            
+            totalRow.innerHTML = `
+                <td><strong>TOTAL</strong></td>
+                <td><strong>${totalCSE.toLocaleString()}</strong></td>
+                <td><strong>${totalTPE.toLocaleString()}</strong></td>
+                <td><strong>${totalAGRI.toLocaleString()}</strong></td>
+                <td><strong>${grandTotal.toLocaleString()}</strong></td>
+            `;
+            
+            tableBody.appendChild(totalRow);
+        }
+
+        // Fonction pour mettre à jour le tableau des entreprises
+        function updateEntreprisesTable(data) {
+            const tableContainer = document.getElementById('entreprises-table-container');
+            
+            // Créer le tableau avec DataTables
+            let tableHtml = `
+                <table class="table table-striped table-hover" id="entreprises-table">
+                    <thead>
+                        <tr>
+                            <th>SIRET</th>
+                            <th>Entreprise</th>
+                            <th>Ville</th>
+                            <th>Type</th>
+                            <th>Salariés</th>
+                            <th>CGT (voix)</th>
+                            <th>CGT (%)</th>
+                            <th>Syndicat majoritaire</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            // Afficher toutes les entreprises
+            data.entreprises.forEach(entreprise => {
+                // Calculer le pourcentage CGT
+                const cgtVoix = entreprise.syndicats?.CGT?.voix || 0;
+                const totalVoix = Object.values(entreprise.syndicats || {}).reduce((sum, syndicat) => sum + (syndicat.voix || 0), 0);
+                const cgtPourcentage = totalVoix > 0 ? (cgtVoix / totalVoix * 100).toFixed(2) : '0.00';
+                
+                // Déterminer le syndicat majoritaire
+                let syndicatMajoritaire = 'Aucun';
+                let maxVoix = 0;
+                
+                Object.entries(entreprise.syndicats || {}).forEach(([nom, data]) => {
+                    if (data.voix > maxVoix) {
+                        maxVoix = data.voix;
+                        syndicatMajoritaire = nom;
+                    }
+                });
+                
+                // Déterminer la couleur du syndicat majoritaire
+                const syndicatColor = syndicatColors[syndicatMajoritaire] || '#999';
+                
+                tableHtml += `
+                    <tr>
+                        <td>${entreprise.siret || 'N/A'}</td>
+                        <td>${entreprise.nom || 'N/A'}</td>
+                        <td>${entreprise.ville || 'N/A'}</td>
+                        <td>${entreprise.typeElection || 'CSE'}</td>
+                        <td>${entreprise.salaries ? entreprise.salaries.toLocaleString() : 'N/A'}</td>
+                        <td>${cgtVoix}</td>
+                        <td>${cgtPourcentage}%</td>
+                        <td>
+                            <span style="display: inline-block; width: 15px; height: 15px; background-color: ${syndicatColor}; margin-right: 5px; border-radius: 3px;"></span>
+                            ${syndicatMajoritaire}
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            tableHtml += `
+                    </tbody>
+                </table>
+            `;
+            
+            // Mettre à jour le contenu
+            tableContainer.innerHTML = tableHtml;
+            
+            // Initialiser DataTables
+            $(document).ready(function() {
+                $('#entreprises-table').DataTable({
+                    language: {
+                        url: 'https://cdn.datatables.net/plug-ins/1.13.4/i18n/fr-FR.json'
+                    },
+                    pageLength: 10,
+                    lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "Tous"]],
+                    dom: 'Bfrtip',
+                    buttons: [
+                        'copy', 'excel', 'pdf', 'print'
+                    ],
+                    responsive: true
+                });
+            });
+        }
+
+        // Fonction pour obtenir les paramètres de l'URL
+        function getUrlParameter(name) {
+            name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
+            const regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
+            const results = regex.exec(location.search);
+            return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
+        }
+        
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', function() {
+            // Vérifier si un département est spécifié dans l'URL
+            const deptFromUrl = getUrlParameter('dept');
+            const defaultDept = deptFromUrl && departementsBFC.includes(deptFromUrl) ? deptFromUrl : '21';
+            
+            // Mettre à jour l'apparence du bouton actif
+            document.querySelectorAll('[data-dept]').forEach(btn => {
+                if (btn.getAttribute('data-dept') === defaultDept) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+            
+            // Charger les données du département par défaut ou spécifié dans l'URL
+            loadDepartementData(defaultDept)
+                .then(data => {
+                    updateUI(data);
+                });
+            
+            // Ajouter des gestionnaires d'événements pour les boutons de département
+            document.querySelectorAll('[data-dept]').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    // Mettre à jour l'apparence des boutons
+                    document.querySelectorAll('[data-dept]').forEach(b => {
+                        b.classList.remove('active');
+                    });
+                    this.classList.add('active');
+                    
+                    // Charger les données du département sélectionné
+                    const deptCode = this.getAttribute('data-dept');
+                    
+                    // Mettre à jour l'URL sans recharger la page
+                    const url = new URL(window.location);
+                    url.searchParams.set('dept', deptCode);
+                    window.history.pushState({}, '', url);
+                    
+                    loadDepartementData(deptCode)
+                        .then(data => {
+                            updateUI(data);
+                        });
+                });
+            });
+        });
+    </script>
+</body>
+</html>

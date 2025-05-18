@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Détails par département - Bourgogne-Franche-Comté</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
+    <!-- DataTables CSS & JS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css">
+    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
+    
+    <!-- DataTables Buttons Extension -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.3.6/css/buttons.bootstrap5.min.css">
+    <script src="https://cdn.datatables.net/buttons/2.3.6/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.bootstrap5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.html5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.print.min.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="auth.js"></script>
+    <link rel="stylesheet" href="css/carte-bfc.css">
+    <style>
+        .dept-card {
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .dept-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+        }
+        
+        .dept-header {
+            background-color: #e63946;
+            color: white;
+            padding: 15px;
+            font-weight: 600;
+        }
+        
+        .dept-body {
+            padding: 20px;
+        }
+        
+        .dept-stats {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        
+        .dept-stat-item {
+            text-align: center;
+            padding: 10px;
+            min-width: 120px;
+        }
+        
+        .dept-stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #e63946;
+        }
+        
+        .dept-stat-label {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+        
+        .dept-chart-container {
+            height: 250px;
+            margin-bottom: 20px;
+        }
+        
+        .dept-tabs {
+            margin-top: 20px;
+        }
+        
+        .nav-tabs .nav-link.active {
+            color: #e63946;
+            font-weight: 600;
+            border-bottom: 2px solid #e63946;
+        }
+        
+        .tab-content {
+            padding: 20px 0;
+        }
+        
+        .dept-selector {
+            margin-bottom: 30px;
+        }
+        
+        .dept-selector .btn {
+            margin: 5px;
+        }
+        
+        .dept-selector .btn.active {
+            background-color: #e63946;
+            border-color: #e63946;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <header class="d-flex justify-content-between align-items-center mb-4">
+            <div class="d-flex align-items-center">
+                <img src="logo-cgt.png" alt="Logo CGT" class="cgt-logo">
+                <h1>Détails par département - Bourgogne-Franche-Comté</h1>
+            </div>
+            <a href="index_bfc.html" class="btn btn-outline-secondary">Déconnexion</a>
+        </header>
+
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Analyse détaillée par département</h5>
+                        <p class="card-text">Bourgogne-Franche-Comté - Mesure de représentativité du 8 avril 2025</p>
+                    </div>
+                                </li>
+                            </ul>
+                            <div class="tab-content" id="deptTabsContent">
+                                <div class="tab-pane fade show active" id="entreprises" role="tabpanel" aria-labelledby="entreprises-tab">
+                                    <div class="table-responsive">
+                                        <table class="table table-striped table-hover" id="entreprises-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>SIRET</th>
+                                                    <th>Entreprise</th>
+                                                    <th>Ville</th>
+                                                    <th>Salariés</th>
+                                                    <th>CGT (%)</th>
+                                                    <th>Sièges CGT</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <!-- Les données seront injectées ici par JavaScript -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <div class="tab-pane fade" id="syndicats" role="tabpanel" aria-labelledby="syndicats-tab">
+                                    <div class="table-responsive">
+                                        <table class="table table-striped table-hover" id="syndicats-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Syndicat</th>
+                                                    <th>Voix</th>
+                                                    <th>Pourcentage</th>
+                                                    <th>Implantation</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <!-- Les données seront injectées ici par JavaScript -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <div class="tab-pane fade" id="secteurs" role="tabpanel" aria-labelledby="secteurs-tab">
+                                    <div class="dept-chart-container">
+                                        <canvas id="secteurs-chart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row mt-4 mb-4">
+            <div class="col-12 text-center">
+                <a href="index_bfc.html" class="btn btn-outline-danger">
+                    <i class="bi bi-arrow-left"></i> Retour à l'accueil
+                </a>
+                <a href="carte_bfc.html" class="btn btn-outline-danger">
+                    <i class="bi bi-map"></i> Carte interactive
+                </a>
+                <a href="comparaison_bfc_national.html" class="btn btn-outline-danger">
+                    <i class="bi bi-bar-chart"></i> Comparaison BFC/National
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Script unique pour le traitement et l'affichage des données -->
+    <script>
+        // Liste des départements de la Bourgogne-Franche-Comté
+        const departementsBFC = ['21', '25', '39', '58', '70', '71', '89', '90'];
+
+        // Noms des départements
+        const departementNames = {
+            '21': 'Côte-d\'Or',
+            '25': 'Doubs',
+            '39': 'Jura',
+            '58': 'Nièvre',
+            '70': 'Haute-Saône',
+            '71': 'Saône-et-Loire',
+            '89': 'Yonne',
+            '90': 'Territoire de Belfort'
+        };
+
+        // Couleurs pour les syndicats
+        const syndicatColors = {
+            'CGT': '#e63946',
+            'CFDT': '#457b9d',
+            'FO': '#f4a261',
+            'CFE-CGC': '#2a9d8f',
+            'CFTC': '#6a994e',
+            'UNSA': '#9b5de5',
+            'SUD': '#f94144'
+        };
+
+        // Fonction pour charger les données d'un département
+        function loadDepartementData(deptCode) {
+            console.log(`Début du chargement des données pour le département ${deptCode}`);
+            const url = `json_data/departement_${deptCode}.json`;
+            console.log(`URL: ${url}`);
+            
+            return fetch(url)
+                .then(response => {
+                    console.log(`Réponse pour ${deptCode}:`, response.status, response.statusText);
+                    if (!response.ok) {
+                        throw new Error(`Erreur HTTP: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log(`Données brutes du département ${deptCode} chargées:`, data ? (Array.isArray(data) ? data.length : 'non-array') : 'null', 'entreprises');
+                    if (!data || !Array.isArray(data)) {
+                        console.error(`Données invalides pour ${deptCode}:`, data);
+                        return null;
+                    }
+                    return processDepartementData(data, deptCode);
+                })
+                .catch(error => {
+                    console.error(`Erreur lors du chargement des données pour le département ${deptCode}:`, error);
+                    return null;
+                });
+        }
+
+        // Fonction pour traiter les données d'un département
+        function processDepartementData(rawData, deptCode) {
+            console.log(`Traitement des données pour le département ${deptCode}`);
+            
+            // Créer l'objet de données traitées
+            const processedData = {
+                code: deptCode,
+                nom: departementNames[deptCode] || `Département ${deptCode}`,
+                syndicats: {
+                    CGT: { voix: 0, implantation: 0 },
+                    CFDT: { voix: 0, implantation: 0 },
+                    FO: { voix: 0, implantation: 0 },
+                    'CFE-CGC': { voix: 0, implantation: 0 },
+                    CFTC: { voix: 0, implantation: 0 },
+                    UNSA: { voix: 0, implantation: 0 },
+                    SUD: { voix: 0, implantation: 0 }
+                },
+                entreprises: []
+            };
+            
+            // Compteurs pour les totaux
+            let totalVoix = 0;
+            
+            // Correspondance entre les noms de syndicats dans les données et nos noms
+            const syndicatMapping = {
+                'CGT': 'CGT',
+                'CFDT': 'CFDT',
+                'CGT-FO': 'FO',
+                'FO': 'FO',  // Au cas où certains fichiers utilisent FO directement
+                'CFE-CGC': 'CFE-CGC',
+                'CFTC': 'CFTC',
+                'UNSA': 'UNSA',
+                'SOLIDAIRES': 'SUD',
+                'SUD': 'SUD'  // Au cas où certains fichiers utilisent SUD directement
+            };
+            
+            // Traiter chaque entreprise
+            if (Array.isArray(rawData)) {
+                rawData.forEach(entreprise => {
+                    // Vérifier si l'entreprise a des données valides
+                    if (!entreprise || typeof entreprise !== 'object') {
+                        return;
+                    }
+                    
+                    // Créer un objet entreprise
+                    const entrepriseObj = {
+                        siret: entreprise.SIRET || '',
+                        nom: entreprise['Raison sociale'] || '',
+                        ville: entreprise.Ville || '',
+                        departement: deptCode,
+                        salaries: parseInt(entreprise.Inscrits) || 0,
+                        syndicats: {}
+                    };
+                    
+                    // Parcourir tous les champs de l'entreprise pour trouver les syndicats
+                    Object.keys(entreprise).forEach(key => {
+                        // Vérifier si la clé correspond à un syndicat
+                        if (syndicatMapping[key]) {
+                            const syndicat = syndicatMapping[key];
+                            const voix = parseFloat(entreprise[key]) || 0;
+                            
+                            if (voix > 0) {
+                                // Ajouter les voix au syndicat dans l'entreprise
+                                entrepriseObj.syndicats[syndicat] = { voix: voix };
+                                
+                                // Ajouter les voix au total du syndicat dans le département
+                                processedData.syndicats[syndicat].voix += voix;
+                                
+                                // Incrémenter l'implantation du syndicat si présent dans l'entreprise
+                                processedData.syndicats[syndicat].implantation++;
+                                
+                                // Ajouter au total des voix
+                                totalVoix += voix;
+                            }
+                        }
+                    });
+                    
+                    // Ajouter l'entreprise aux données du département
+                    processedData.entreprises.push(entrepriseObj);
+                });
+            } else {
+                console.error('Les données brutes ne sont pas un tableau:', rawData);
+            }
+            
+            // Calculer les pourcentages pour chaque syndicat
+            Object.keys(processedData.syndicats).forEach(syndicat => {
+                const syndicatData = processedData.syndicats[syndicat];
+                
+                // Calculer le pourcentage de voix
+                syndicatData.pourcentage = totalVoix > 0 ? (syndicatData.voix / totalVoix * 100) : 0;
+            });
+            
+            console.log(`Données traitées pour le département ${deptCode}:`, 
+                        `${processedData.entreprises.length} entreprises, `,
+                        `CGT: ${processedData.syndicats.CGT.pourcentage.toFixed(2)}%`);
+            
+            return processedData;
+        }
+    </script>
+    <script>
+        // Initialisation de la page des départements
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Initialisation de la page des départements BFC');
+            
+            // Charger les données du département 21 par défaut
+            loadDepartementData('21')
+                .then(data => {
+                    console.log('Données du département 21 chargées:', data);
+                    if (data) {
+                        // Mettre à jour l'interface utilisateur
+                        updateDepartementUI(data);
+                    } else {
+                        console.error('Pas de données pour le département 21');
+                    }
+                })
+                .catch(error => {
+                    console.error('Erreur lors du chargement des données:', error);
+                });
+            
+            // Ajouter des gestionnaires d'événements pour les boutons de département
+            document.querySelectorAll('.dept-selector .btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const deptCode = this.getAttribute('data-dept');
+                    if (!deptCode) {
+                        console.error('Pas de code de département sur le bouton:', this);
+                        return;
+                    }
+                    
+                    console.log('Clic sur le département:', deptCode);
+                    
+                    // Mettre à jour l'apparence des boutons
+                    document.querySelectorAll('.dept-selector .btn').forEach(b => {
+                        b.classList.remove('active');
+                    });
+                    this.classList.add('active');
+                    
+                    // Charger les données du département sélectionné
+                    loadDepartementData(deptCode)
+                        .then(data => {
+                            console.log(`Données du département ${deptCode} chargées:`, data);
+                            if (data) {
+                                // Mettre à jour l'interface utilisateur
+                                updateDepartementUI(data);
+                            } else {
+                                console.error(`Pas de données pour le département ${deptCode}`);
+                            }
+                        })
+                        .catch(error => {
+                            console.error(`Erreur lors du chargement des données pour le département ${deptCode}:`, error);
+                        });
+                });
+            });
+        });
+        
+        // Fonction pour mettre à jour l'interface utilisateur avec les données d'un département
+        function updateDepartementUI(data) {
+            console.log('Mise à jour de l\'interface utilisateur avec les données:', data);
+            
+            // Mettre à jour le titre du département
+            const titleElement = document.getElementById('dept-title');
+            if (titleElement) {
+                titleElement.textContent = `${data.nom} (${data.code})`;
+            } else {
+                console.error('Elément de titre non trouvé');
+            }
+            
+            // Mettre à jour les statistiques
+            updateDepartementStats(data);
+            
+            // Mettre à jour le tableau des syndicats
+            updateSyndicatsTable(data);
+            
+            // Mettre à jour le tableau des entreprises
+            updateEntreprisesTable(data);
+        }
+        
+        // Fonction pour mettre à jour les statistiques d'un département
+        function updateDepartementStats(data) {
+            const statsContainer = document.getElementById('dept-stats');
+            if (!statsContainer) {
+                console.error('Conteneur de statistiques non trouvé');
+                return;
+            }
+            
+            // Vider le conteneur
+            statsContainer.innerHTML = '';
+            
+            // Créer les statistiques
+            const cgtData = data.syndicats.CGT;
+            const totalEntreprises = data.entreprises.length;
+            const totalSalaries = data.entreprises.reduce((sum, e) => sum + (e.salaries || 0), 0);
+            
+            // Créer les éléments de statistiques
+            const stats = [
+                { value: cgtData.pourcentage ? cgtData.pourcentage.toFixed(2) + '%' : 'N/A', label: 'CGT' },
+                { value: cgtData.sieges ? cgtData.sieges.toLocaleString() : 'N/A', label: 'Sièges CGT' },
+                { value: totalEntreprises.toLocaleString(), label: 'Entreprises' },
+                { value: totalSalaries.toLocaleString(), label: 'Salariés' }
+            ];
+            
+            // Ajouter les statistiques au conteneur
+            stats.forEach(stat => {
+                const col = document.createElement('div');
+                col.className = 'col-md-3 col-sm-6 mb-3';
+                
+                const statItem = document.createElement('div');
+                statItem.className = 'dept-stat-item';
+                
+                const valueDiv = document.createElement('div');
+                valueDiv.className = 'dept-stat-value';
+                valueDiv.textContent = stat.value;
+                
+                const labelDiv = document.createElement('div');
+                labelDiv.className = 'dept-stat-label';
+                labelDiv.textContent = stat.label;
+                
+                statItem.appendChild(valueDiv);
+                statItem.appendChild(labelDiv);
+                col.appendChild(statItem);
+                
+                statsContainer.appendChild(col);
+            });
+        }
+        
+        // Fonction pour mettre à jour le tableau des syndicats
+        function updateSyndicatsTable(data) {
+            const tableBody = document.querySelector('#syndicats-table tbody');
+            if (!tableBody) {
+                console.error('Corps du tableau des syndicats non trouvé');
+                return;
+            }
+            
+            // Vider le tableau
+            tableBody.innerHTML = '';
+            
+            // Ajouter les données pour chaque syndicat
+            Object.entries(data.syndicats).forEach(([syndicat, syndicatData]) => {
+                const row = document.createElement('tr');
+                
+                // Définir la couleur du syndicat
+                const syndicatColors = {
+                    'CGT': '#e63946',
+                    'CFDT': '#457b9d',
+                    'FO': '#f4a261',
+                    'CFE-CGC': '#2a9d8f',
+                    'CFTC': '#6a994e',
+                    'UNSA': '#9b5de5',
+                    'SUD': '#f94144'
+                };
+                
+                const color = syndicatColors[syndicat] || '#999';
+                
+                row.innerHTML = `
+                    <td><span style="display: inline-block; width: 15px; height: 15px; background-color: ${color}; margin-right: 5px; border-radius: 3px;"></span> ${syndicat}</td>
+                    <td>${syndicatData.voix ? syndicatData.voix.toLocaleString() : 'N/A'}</td>
+                    <td>${syndicatData.pourcentage ? syndicatData.pourcentage.toFixed(2) + '%' : 'N/A'}</td>
+                    <td>${syndicatData.implantation ? syndicatData.implantation.toLocaleString() : 'N/A'}</td>
+                `;
+                
+                tableBody.appendChild(row);
+            });
+        }
+        
+        // Fonction pour mettre à jour le tableau des entreprises
+        function updateEntreprisesTable(data) {
+            const tableContainer = document.getElementById('entreprises-table-container');
+            if (!tableContainer) {
+                console.error('Conteneur du tableau des entreprises non trouvé');
+                return;
+            }
+            
+            // Créer le tableau
+            let tableHtml = `
+                <table class="table table-striped table-hover" id="entreprises-table">
+                    <thead>
+                        <tr>
+                            <th>SIRET</th>
+                            <th>Entreprise</th>
+                            <th>Ville</th>
+                            <th>Salariés</th>
+                            <th>CGT (%)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            // Ajouter les lignes pour chaque entreprise (limiter à 50 pour des raisons de performance)
+            const entreprises = data.entreprises.slice(0, 50);
+            
+            entreprises.forEach(entreprise => {
+                // Calculer le pourcentage CGT
+                const cgtVoix = entreprise.syndicats?.CGT?.voix || 0;
+                const totalVoix = Object.values(entreprise.syndicats || {}).reduce((sum, syndicat) => sum + (syndicat.voix || 0), 0);
+                const cgtPourcentage = totalVoix > 0 ? (cgtVoix / totalVoix * 100).toFixed(2) : '0.00';
+                
+                tableHtml += `
+                    <tr>
+                        <td>${entreprise.siret || 'N/A'}</td>
+                        <td>${entreprise.nom || 'N/A'}</td>
+                        <td>${entreprise.ville || 'N/A'}</td>
+                        <td>${entreprise.salaries ? entreprise.salaries.toLocaleString() : 'N/A'}</td>
+                        <td>${cgtPourcentage}%</td>
+                    </tr>
+                `;
+            });
+            
+            tableHtml += `
+                    </tbody>
+                </table>
+            `;
+            
+            // Mettre à jour le contenu
+            tableContainer.innerHTML = tableHtml;
+        }
+    </script>
+</body>
+</html>

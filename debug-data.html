@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Débogage des Données</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        pre { background-color: #f5f5f5; padding: 10px; border-radius: 5px; overflow: auto; }
+        .success { color: green; }
+        .error { color: red; }
+        button { margin: 5px; padding: 8px; }
+    </style>
+</head>
+<body>
+    <h1>Débogage des Données BFC</h1>
+    
+    <div>
+        <button id="load-data">Charger les données du département 21</button>
+        <button id="show-keys">Afficher les clés</button>
+    </div>
+    
+    <div id="status">Prêt</div>
+    
+    <h2>Données brutes</h2>
+    <pre id="raw-data">Cliquez sur "Charger les données" pour voir les données brutes</pre>
+    
+    <h2>Clés disponibles</h2>
+    <pre id="keys-data"></pre>
+    
+    <script>
+        // Fonction pour afficher un message de statut
+        function updateStatus(message, isError = false) {
+            const statusElement = document.getElementById('status');
+            statusElement.textContent = message;
+            statusElement.className = isError ? 'error' : 'success';
+        }
+        
+        // Fonction pour afficher du texte dans un élément
+        function displayText(elementId, text) {
+            document.getElementById(elementId).textContent = text;
+        }
+        
+        // Variable pour stocker les données
+        let rawData = null;
+        
+        // Charger les données du département 21
+        document.getElementById('load-data').addEventListener('click', function() {
+            updateStatus('Chargement des données...');
+            
+            fetch('json_data/departement_21.json')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Erreur HTTP: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    rawData = data;
+                    updateStatus('Données chargées avec succès');
+                    
+                    // Afficher les 3 premières entreprises
+                    const sample = data.slice(0, 3);
+                    displayText('raw-data', JSON.stringify(sample, null, 2));
+                })
+                .catch(error => {
+                    updateStatus(`Erreur lors du chargement des données: ${error.message}`, true);
+                    console.error('Erreur:', error);
+                });
+        });
+        
+        // Afficher les clés disponibles
+        document.getElementById('show-keys').addEventListener('click', function() {
+            if (!rawData || !rawData.length) {
+                updateStatus('Veuillez d\'abord charger les données', true);
+                return;
+            }
+            
+            // Récupérer toutes les clés uniques
+            const keys = new Set();
+            rawData.forEach(item => {
+                Object.keys(item).forEach(key => keys.add(key));
+            });
+            
+            // Afficher les clés
+            const keysArray = Array.from(keys).sort();
+            displayText('keys-data', JSON.stringify(keysArray, null, 2));
+            
+            // Compter les syndicats présents
+            const syndicats = ['CGT', 'CFDT', 'CGT-FO', 'CFE-CGC', 'CFTC', 'UNSA', 'SOLIDAIRES'];
+            const counts = {};
+            
+            syndicats.forEach(syndicat => {
+                counts[syndicat] = rawData.filter(item => item[syndicat] && parseFloat(item[syndicat]) > 0).length;
+            });
+            
+            // Ajouter les comptages au texte
+            displayText('keys-data', JSON.stringify(keysArray, null, 2) + '\n\nComptage des syndicats:\n' + JSON.stringify(counts, null, 2));
+        });
+    </script>
+</body>
+</html>

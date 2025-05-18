@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Débogage des données BFC</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        pre {
+            background-color: #f5f5f5;
+            padding: 10px;
+            border-radius: 5px;
+            overflow: auto;
+        }
+        .success {
+            color: green;
+        }
+        .error {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <h1>Débogage des données BFC</h1>
+    <div id="status">Chargement des données...</div>
+    <h2>Données brutes du département 21</h2>
+    <pre id="raw-data"></pre>
+    <h2>Données traitées du département 21</h2>
+    <pre id="processed-data"></pre>
+
+    <script>
+        // Fonction pour afficher les données JSON avec formatage
+        function displayJSON(data, elementId) {
+            document.getElementById(elementId).textContent = JSON.stringify(data, null, 2);
+        }
+
+        // Fonction pour afficher un message de statut
+        function updateStatus(message, isError = false) {
+            const statusElement = document.getElementById('status');
+            statusElement.textContent = message;
+            statusElement.className = isError ? 'error' : 'success';
+        }
+
+        // Charger les données brutes du département 21
+        fetch('json_data/departement_21.json')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Erreur HTTP: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                updateStatus('Données brutes chargées avec succès');
+                displayJSON(data, 'raw-data');
+                
+                // Traiter les données
+                const processedData = processData(data);
+                displayJSON(processedData, 'processed-data');
+            })
+            .catch(error => {
+                updateStatus(`Erreur lors du chargement des données: ${error.message}`, true);
+                console.error('Erreur:', error);
+            });
+
+        // Fonction simplifiée pour traiter les données
+        function processData(rawData) {
+            // Créer l'objet de données traitées
+            const processedData = {
+                code: '21',
+                nom: 'Côte-d\'Or',
+                syndicats: {
+                    CGT: { voix: 0, sieges: 0, implantation: 0 },
+                    CFDT: { voix: 0, sieges: 0, implantation: 0 },
+                    'CGT-FO': { voix: 0, sieges: 0, implantation: 0 },
+                    'CFE-CGC': { voix: 0, sieges: 0, implantation: 0 },
+                    CFTC: { voix: 0, sieges: 0, implantation: 0 },
+                    UNSA: { voix: 0, sieges: 0, implantation: 0 },
+                    SOLIDAIRES: { voix: 0, sieges: 0, implantation: 0 }
+                },
+                entreprises: []
+            };
+            
+            // Compteurs pour les totaux
+            let totalVoix = 0;
+            
+            // Traiter chaque entreprise
+            rawData.forEach(entreprise => {
+                // Créer un objet entreprise
+                const entrepriseObj = {
+                    siret: entreprise.SIRET || '',
+                    nom: entreprise['Raison sociale'] || '',
+                    ville: entreprise.Ville || '',
+                    departement: '21',
+                    salaries: entreprise.Inscrits || 0,
+                    syndicats: {}
+                };
+                
+                // Compter les voix pour chaque syndicat
+                const syndicats = ['CGT', 'CFDT', 'FO', 'CFE-CGC', 'CFTC', 'UNSA', 'SUD'];
+                
+                syndicats.forEach(syndicat => {
+                    // Certains syndicats ont des noms différents dans les données
+                    let syndicatKey = syndicat;
+                    if (syndicat === 'FO') syndicatKey = 'CGT-FO';
+                    if (syndicat === 'SUD') syndicatKey = 'SOLIDAIRES';
+                    
+                    const voix = parseInt(entreprise[syndicat] || 0);
+                    
+                    if (voix > 0) {
+                        // Ajouter les voix au syndicat dans l'entreprise
+                        entrepriseObj.syndicats[syndicatKey] = { voix: voix };
+                        
+                        // Ajouter les voix au total du syndicat dans le département
+                        processedData.syndicats[syndicatKey].voix += voix;
+                        
+                        // Incrémenter l'implantation du syndicat si présent dans l'entreprise
+                        processedData.syndicats[syndicatKey].implantation++;
+                        
+                        // Ajouter au total des voix
+                        totalVoix += voix;
+                    }
+                });
+                
+                // Ajouter l'entreprise aux données du département
+                processedData.entreprises.push(entrepriseObj);
+            });
+            
+            // Calculer les pourcentages pour chaque syndicat
+            Object.keys(processedData.syndicats).forEach(syndicat => {
+                const syndicatData = processedData.syndicats[syndicat];
+                
+                // Calculer le pourcentage de voix
+                syndicatData.pourcentage = totalVoix > 0 ? (syndicatData.voix / totalVoix * 100) : 0;
+                
+                // Estimer le nombre de sièges (simplifié)
+                syndicatData.sieges = Math.round(syndicatData.pourcentage / 100 * processedData.entreprises.length);
+            });
+            
+            return processedData;
+        }
+    </script>
+</body>
+</html>
