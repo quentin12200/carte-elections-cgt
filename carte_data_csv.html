@@ -437,15 +437,18 @@
                     });
                 }
                 
-                // Trier les départements par code
+                // Trier les départements par code de manière numérique
+                function codeToNumber(code) {
+                    if (code === '2A') return 20;
+                    if (code === '2B') return 21;
+                    const num = parseInt(code, 10);
+                    return isNaN(num) ? 999 : num;
+                }
                 deptsArray.sort((a, b) => {
-                    // Gérer les cas spéciaux comme 2A, 2B, etc.
-                    if (a.code === b.code) return 0;
-                    if (a.code.startsWith('97') && !b.code.startsWith('97')) return 1;
-                    if (!a.code.startsWith('97') && b.code.startsWith('97')) return -1;
-                    if (a.code === '2A') return b.code === '2B' ? -1 : a.code.localeCompare(b.code);
-                    if (a.code === '2B') return a.code.localeCompare(b.code);
-                    return a.code.localeCompare(b.code);
+                    const numA = codeToNumber(a.code);
+                    const numB = codeToNumber(b.code);
+                    if (numA === numB) return a.code.localeCompare(b.code);
+                    return numA - numB;
                 });
                 
                 // Ajouter les options au menu déroulant
@@ -494,7 +497,12 @@
                 
                 // Trier les départements
                 if (triActif === 'dept') {
-                    deptsFiltered.sort((a, b) => a.code.localeCompare(b.code));
+                    deptsFiltered.sort((a, b) => {
+                        const numA = codeToNumber(a.code);
+                        const numB = codeToNumber(b.code);
+                        if (numA === numB) return a.code.localeCompare(b.code);
+                        return numA - numB;
+                    });
                 } else if (triActif === 'cgt') {
                     deptsFiltered.sort((a, b) => getPourcentageSyndicat(b, 'CGT') - getPourcentageSyndicat(a, 'CGT'));
                 } else if (triActif === 'cfdt') {
