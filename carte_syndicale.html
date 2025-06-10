@@ -649,37 +649,27 @@ let colorScale = d3.scaleSequential(colorPalettes['all']);
         // Charger les données
         function loadData() {
             Promise.all([
-                fetch('json_data_ordonnees/stats_regions.json'),
-                fetch('json_data_ordonnees/resultats_departements.json'),
-                fetch('assets/france-departements.json')
+                fetch('pv_data.csv').then(r => {
+                    if (!r.ok) throw new Error(`Erreur HTTP: ${r.status}`);
+                    return r.arrayBuffer();
+                }),
+                fetch('assets/france-departements.json').then(r => r.json())
             ])
-            .then(responses => {
-                // Vérifier si toutes les réponses sont OK
-                for (let response of responses) {
-                    if (!response.ok) {
-                        throw new Error(`Erreur HTTP: ${response.status} - ${response.statusText}`);
-                    }
+            .then(([buffer, geoData]) => {
+                const csvText = new TextDecoder('iso-8859-1').decode(buffer).replace(/\r\n/g, '\n');
+                const lines = csvText.split('\n');
+                const headers = lines[0].split(';').map(h => h.trim());
+                const idx = {};
+                headers.forEach((h, i) => { idx[h] = i; });
+
+                const nameMap = {};
+                if (geoData && geoData.features) {
+                    geoData.features.forEach(f => { nameMap[f.properties.code] = f.properties.nom; });
                 }
-                // Utiliser une fonction personnalisée pour parser le JSON et gérer les valeurs NaN
-                return Promise.all(responses.map(response => 
-                    response.text().then(text => {
-                        // Remplacer les valeurs NaN par null pour permettre le parsing JSON
-                        const validJsonText = text.replace(/: *NaN/g, ': null');
-                        try {
-                            return JSON.parse(validJsonText);
-                        } catch (e) {
-                            console.error('Erreur de parsing JSON:', e);
-                            console.error('Texte JSON problématique:', validJsonText.substring(0, 200) + '...');
-                            throw new Error(`Erreur de parsing JSON: ${e.message}`);
-                        }
-                    })
-                ));
-            })
-            .then(([statsNat, resultatsDeptsData, geoData]) => {
-                // Stocker les données
-                resultatsParDepartement = resultatsDeptsData;
-                
-                // Calculer les statistiques nationales à partir des données des départements
+
+                const syndicats = ['CGT','CFDT','CGT-FO','CFTC','CFE-CGC','SOLIDAIRES','UNSA','AUTRES'];
+                resultatsParDepartement = {};
+                detailsDepartements = {};
                 statsNationales = {
                     total_scrutins: 0,
                     total_inscrits: 0,
@@ -697,49 +687,104 @@ let colorScale = d3.scaleSequential(colorPalettes['all']);
                     },
                     pourcentages: {}
                 };
-                
-                // Agréger les données de tous les départements
-                for (const deptCode in resultatsParDepartement) {
-                    const dept = resultatsParDepartement[deptCode];
-                    statsNationales.total_scrutins += dept.total_scrutins || 0;
-                    statsNationales.total_inscrits += dept.total_inscrits || 0;
-                    statsNationales.total_votants += dept.total_votants || 0;
-                    statsNationales.total_sve += dept.total_sve || 0;
-                    
-                    // Agréger les voix par syndicat
-                    for (const syndicat in statsNationales.voix) {
-                        if (dept.voix && dept.voix[syndicat]) {
-                            statsNationales.voix[syndicat] += dept.voix[syndicat];
-                        }
+
+                for (let i = 1; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    if (!line) continue;
+
+                    const values = line.split(';');
+                    const deptCode = values[idx['Dpartement']] || values[idx['Departement']] || values[idx['Département']];
+                    if (!deptCode) continue;
+
+                    if (!resultatsParDepartement[deptCode]) {
+                        resultatsParDepartement[deptCode] = {
+                            code: deptCode,
+                            nom: nameMap[deptCode] || `Département ${deptCode}`,
+                            total_scrutins: 0,
+                            total_inscrits: 0,
+                            total_votants: 0,
+                            total_sve: 0,
+                            voix: {
+                                'CGT': 0,
+                                'CFDT': 0,
+                                'CGT-FO': 0,
+                                'CFTC': 0,
+                                'CFE-CGC': 0,
+                                'SOLIDAIRES': 0,
+                                'UNSA': 0,
+                                'AUTRES': 0
+                            },
+                            pourcentages: {}
+                        };
+                        detailsDepartements[deptCode] = [];
                     }
+
+                    const dept = resultatsParDepartement[deptCode];
+                    dept.total_scrutins += 1;
+                    const inscrits = parseFloat(values[idx['Inscrits']] || 0);
+                    const votants = parseFloat(values[idx['Votants']] || 0);
+                    const sve = parseFloat(values[idx['sve_total']] || 0);
+                    dept.total_inscrits += inscrits;
+                    dept.total_votants += votants;
+                    dept.total_sve += sve;
+
+                    statsNationales.total_scrutins += 1;
+                    statsNationales.total_inscrits += inscrits;
+                    statsNationales.total_votants += votants;
+                    statsNationales.total_sve += sve;
+
+                    const pv = {
+                        siret: values[idx['SIRET']],
+                        raison_sociale: values[idx['Raison sociale']],
+                        ville: values[idx['Ville']],
+                        idcc: values[idx['IDCC']],
+                        lib_idcc: values[idx['Lib IDCC']],
+                        college: values[idx['Coll']],
+                        date: values[idx['Date']],
+                        cp: values[idx['CP']],
+                        numero_pv: values[idx['Numero PV']] || values[idx['N°PV']] || values[idx['NPV']],
+                        type: values[idx['Type']],
+                        departement: deptCode,
+                        region: values[idx['Rgion']] || values[idx['Région']],
+                        fd: values[idx['FD']],
+                        inscrits: inscrits,
+                        votants: votants,
+                        sve_total: sve,
+                        voix: {}
+                    };
+                    syndicats.forEach(s => {
+                        const voix = parseFloat(values[idx[s]] || 0);
+                        dept.voix[s] += voix;
+                        statsNationales.voix[s] += voix;
+                        pv.voix[s] = voix;
+                    });
+                    detailsDepartements[deptCode].push(pv);
                 }
-                
-                // Calculer les pourcentages
-                for (const syndicat in statsNationales.voix) {
-                    statsNationales.pourcentages[syndicat] = statsNationales.total_sve > 0 ? 
-                        (statsNationales.voix[syndicat] / statsNationales.total_sve * 100).toFixed(2) : 0;
+
+                for (const code in resultatsParDepartement) {
+                    const dept = resultatsParDepartement[code];
+                    syndicats.forEach(s => {
+                        dept.pourcentages[s] = dept.total_sve > 0 ? (dept.voix[s] / dept.total_sve * 100) : 0;
+                    });
+                    dept.syndicat_dominant = syndicats.reduce((a,b)=> dept.voix[b] > dept.voix[a] ? b : a, 'CGT');
                 }
-                
+
+                syndicats.forEach(s => {
+                    statsNationales.pourcentages[s] = statsNationales.total_sve > 0 ?
+                        (statsNationales.voix[s] / statsNationales.total_sve * 100).toFixed(2) : 0;
+                });
+
                 console.log('Statistiques nationales calculées:', statsNationales);
-                
-                // Initialiser la carte avec les données géographiques
+
                 initMap(geoData);
-                
-                // Mettre à jour les statistiques nationales
                 updateNationalStats();
-                
-                // Mettre à jour le top 5 des départements
                 updateTopDepartements();
-                
-                // Mettre à jour la coloration de la carte
                 updateMapColoring();
-                
-                // Initialiser la légende des couleurs
                 updateColorLegend();
             })
             .catch(error => {
                 console.error('Erreur lors du chargement des données:', error);
-                document.getElementById('map-container').innerHTML = 
+                document.getElementById('map-container').innerHTML =
                     `<div class="alert alert-danger">Erreur lors du chargement des données: ${error.message}</div>`;
             });
         }
@@ -959,69 +1004,24 @@ let colorScale = d3.scaleSequential(colorPalettes['all']);
 
         // Charger les détails d'un département
         function loadDepartementDetails(codeDept) {
-            // Vérifier si les données sont déjà chargées
-            if (detailsDepartements[codeDept]) {
-                try {
-                    generateEntreprises(codeDept);
-                } catch (error) {
-                    console.error(`Erreur lors de la génération des entreprises pour le département ${codeDept}:`, error);
-                    document.getElementById('entreprises-container').innerHTML = 
-                        `<div class="alert alert-danger">
-                            <h4>Erreur lors du traitement des données</h4>
-                            <p>Impossible de traiter les données pour le département ${codeDept}.</p>
-                            <p>Détail: ${error.message || 'Erreur inconnue'}</p>
-                        </div>`;
-                }
+            const data = detailsDepartements[codeDept];
+            if (!data) {
+                document.getElementById('entreprises-container').innerHTML =
+                    `<div class="alert alert-warning">Aucun PV disponible pour le département ${codeDept}.</div>`;
                 return;
             }
-            
-            // Charger les données du département
-            fetch(`json_data/departement_${codeDept}.json`)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`Erreur HTTP: ${response.status} - ${response.statusText}`);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    try {
-                        // Vérifier que les données sont valides
-                        if (!data) {
-                            throw new Error('Données vides');
-                        }
-                        
-                        // Pour les départements problématiques, utiliser un tableau vide
-                        if (['07', '11', '12'].includes(codeDept) && !Array.isArray(data)) {
-                            console.warn(`Département ${codeDept} a des données non valides, utilisation d'un tableau vide`);
-                            detailsDepartements[codeDept] = [];
-                        } else if (!Array.isArray(data)) {
-                            throw new Error('Format de données invalide (tableau attendu)');
-                        } else {
-                            // Stocker les données
-                            detailsDepartements[codeDept] = data;
-                        }
-                        
-                        // Générer la liste des entreprises
-                        generateEntreprises(codeDept);
-                    } catch (error) {
-                        console.error(`Erreur lors du traitement des données pour le département ${codeDept}:`, error);
-                        document.getElementById('entreprises-container').innerHTML = 
-                            `<div class="alert alert-danger">
-                                <h4>Erreur lors du traitement des données</h4>
-                                <p>Impossible de traiter les données pour le département ${codeDept}.</p>
-                                <p>Détail: ${error.message || 'Erreur inconnue'}</p>
-                            </div>`;
-                    }
-                })
-                .catch(error => {
-                    console.error(`Erreur lors du chargement des données pour le département ${codeDept}:`, error);
-                    document.getElementById('entreprises-container').innerHTML = 
-                        `<div class="alert alert-danger">
-                            <h4>Erreur lors du chargement des données</h4>
-                            <p>Impossible de charger les données pour le département ${codeDept}.</p>
-                            <p>Détail: ${error.message || 'Erreur inconnue'}</p>
-                        </div>`;
-                });
+
+            try {
+                generateEntreprises(codeDept);
+            } catch (error) {
+                console.error(`Erreur lors de la génération des entreprises pour le département ${codeDept}:`, error);
+                document.getElementById('entreprises-container').innerHTML =
+                    `<div class="alert alert-danger">
+                        <h4>Erreur lors du traitement des données</h4>
+                        <p>Impossible de traiter les données pour le département ${codeDept}.</p>
+                        <p>Détail: ${error.message || 'Erreur inconnue'}</p>
+                    </div>`;
+            }
         }
 
         // Générer la liste des entreprises pour un département
