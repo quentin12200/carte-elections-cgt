@@ -169,8 +169,9 @@ function processCSVData(csvText) {
                         // Utiliser la fonction safeNumber définie globalement
             
             // Ajouter ce PV à l'entreprise avec des valeurs numériques sûres
+            const numeroPV = rowData['Numero PV'] || rowData['N°PV'] || rowData['NPV'] || '';
             entreprisesBySiret[siret].pvs.push({
-                'N°PV': rowData['N°PV'],
+                'Numero PV': numeroPV,
                 'Date': rowData['Date'],
                 'Coll': rowData['Coll'],
                 'Inscrits': safeNumber(rowData['Inscrits']),
@@ -204,7 +205,8 @@ function processCSVData(csvText) {
             
             // Vérifier que les valeurs sont des nombres valides
             if (isNaN(inscrits) || isNaN(votants) || isNaN(sve)) {
-                console.warn('Valeurs numériques invalides pour le PV:', rowData['NumPV'], 'SIRET:', siret);
+                const numPV = rowData['Numero PV'] || rowData['N°PV'] || rowData['NPV'] || '';
+                console.warn('Valeurs numériques invalides pour le PV:', numPV, 'SIRET:', siret);
             }
             
             // Additionner les valeurs numériques pour l'entreprise
