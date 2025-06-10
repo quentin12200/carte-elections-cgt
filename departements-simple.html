@@ -251,135 +251,83 @@
             document.getElementById('loading').style.display = show ? 'block' : 'none';
         }
         
-        // Charger les données des types d'élections depuis le CSV
+        // Charger et agréger les données depuis pv_data.csv
         function loadElectionTypesData(deptCode) {
-            return fetch('resultats_departements_par_type.csv')
+            return fetch('pv_data.csv')
                 .then(response => {
                     if (!response.ok) throw new Error(`Erreur HTTP: ${response.status}`);
                     return response.text();
                 })
                 .then(csvText => {
+                    csvText = csvText.replace(/\r\n/g, '\n');
                     const lines = csvText.split('\n');
-                    const headers = lines[0].split(',');
-                    let deptData = null;
-                    
-                    // Parcourir chaque ligne pour trouver le département demandé
-                    for (let i = 1; i < lines.length; i++) {
-                        if (!lines[i].trim()) continue;
-                        
-                        const values = lines[i].split(',');
-                        const currentDeptCode = values[0];
-                        
-                        if (currentDeptCode === deptCode) {
-                            deptData = {
-                                code: deptCode,
-                                nom: values[1],
-                                typeElections: {
-                                    CSE: {
-                                        voix: parseInt(values[6]) + parseInt(values[7]) + parseInt(values[8]) + 
-                                              parseInt(values[9]) + parseInt(values[10]) + parseInt(values[11]) + 
-                                              parseInt(values[12]) + parseInt(values[13]),
-                                        entreprises: 0 // Nous n'avons pas cette information dans le CSV
-                                    },
-                                    TPE: {
-                                        voix: parseInt(values[16]) + parseInt(values[17]) + parseInt(values[18]) + 
-                                              parseInt(values[19]) + parseInt(values[20]) + parseInt(values[21]) + 
-                                              parseInt(values[22]) + parseInt(values[23]),
-                                        entreprises: 0
-                                    },
-                                    AGRI: {
-                                        voix: parseInt(values[26]) + parseInt(values[27]) + parseInt(values[28]) + 
-                                              parseInt(values[29]) + parseInt(values[30]) + parseInt(values[31]) + 
-                                              parseInt(values[32]) + parseInt(values[33]),
-                                        entreprises: 0
-                                    }
-                                },
-                                syndicats: {
-                                    CGT: { 
-                                        voix: parseInt(values[37]), 
-                                        implantation: 0,
-                                        parType: {
-                                            CSE: parseInt(values[6]),
-                                            TPE: parseInt(values[16]),
-                                            AGRI: parseInt(values[26])
-                                        }
-                                    },
-                                    CFDT: { 
-                                        voix: parseInt(values[38]), 
-                                        implantation: 0,
-                                        parType: {
-                                            CSE: parseInt(values[7]),
-                                            TPE: parseInt(values[17]),
-                                            AGRI: parseInt(values[27])
-                                        }
-                                    },
-                                    FO: { 
-                                        voix: parseInt(values[39]), 
-                                        implantation: 0,
-                                        parType: {
-                                            CSE: parseInt(values[8]),
-                                            TPE: parseInt(values[18]),
-                                            AGRI: parseInt(values[28])
-                                        }
-                                    },
-                                    'CFE-CGC': { 
-                                        voix: parseInt(values[41]), 
-                                        implantation: 0,
-                                        parType: {
-                                            CSE: parseInt(values[10]),
-                                            TPE: parseInt(values[20]),
-                                            AGRI: parseInt(values[30])
-                                        }
-                                    },
-                                    CFTC: { 
-                                        voix: parseInt(values[40]), 
-                                        implantation: 0,
-                                        parType: {
-                                            CSE: parseInt(values[9]),
-                                            TPE: parseInt(values[19]),
-                                            AGRI: parseInt(values[29])
-                                        }
-                                    },
-                                    UNSA: { 
-                                        voix: parseInt(values[43]), 
-                                        implantation: 0,
-                                        parType: {
-                                            CSE: parseInt(values[12]),
-                                            TPE: parseInt(values[22]),
-                                            AGRI: parseInt(values[32])
-                                        }
-                                    },
-                                    SUD: { 
-                                        voix: parseInt(values[42]), 
-                                        implantation: 0,
-                                        parType: {
-                                            CSE: parseInt(values[11]),
-                                            TPE: parseInt(values[21]),
-                                            AGRI: parseInt(values[31])
-                                        }
-                                    }
-                                }
-                            };
-                            
-                            // Calculer les pourcentages pour les types d'élections
-                            const totalVoix = deptData.typeElections.CSE.voix + 
-                                             deptData.typeElections.TPE.voix + 
-                                             deptData.typeElections.AGRI.voix;
-                            
-                            if (totalVoix > 0) {
-                                deptData.typeElections.CSE.pourcentage = 
-                                    (deptData.typeElections.CSE.voix / totalVoix) * 100;
-                                deptData.typeElections.TPE.pourcentage = 
-                                    (deptData.typeElections.TPE.voix / totalVoix) * 100;
-                                deptData.typeElections.AGRI.pourcentage = 
-                                    (deptData.typeElections.AGRI.voix / totalVoix) * 100;
-                            }
-                            
-                            break;
+                    const headers = lines[0].split(';');
+                    const idx = {};
+                    headers.forEach((h, i) => { idx[h.trim()] = i; });
+
+                    const syndicats = ['CGT','CFDT','CGT-FO','CFTC','CFE-CGC','SOLIDAIRES','UNSA','AUTRES'];
+                    const data = {
+                        code: deptCode,
+                        nom: departementNames[deptCode] || `Département ${deptCode}`,
+                        typeElections: {
+                            CSE: { voix: 0, entreprises: 0 },
+                            TPE: { voix: 0, entreprises: 0 },
+                            AGRI: { voix: 0, entreprises: 0 }
+                        },
+                        syndicats: {
+                            CGT: { voix: 0, implantation: 0, parType: { CSE: 0, TPE: 0, AGRI: 0 } },
+                            CFDT: { voix: 0, implantation: 0, parType: { CSE: 0, TPE: 0, AGRI: 0 } },
+                            FO: { voix: 0, implantation: 0, parType: { CSE: 0, TPE: 0, AGRI: 0 } },
+                            'CFE-CGC': { voix: 0, implantation: 0, parType: { CSE: 0, TPE: 0, AGRI: 0 } },
+                            CFTC: { voix: 0, implantation: 0, parType: { CSE: 0, TPE: 0, AGRI: 0 } },
+                            UNSA: { voix: 0, implantation: 0, parType: { CSE: 0, TPE: 0, AGRI: 0 } },
+                            SUD: { voix: 0, implantation: 0, parType: { CSE: 0, TPE: 0, AGRI: 0 } }
                         }
+                    };
+
+                    const siretByType = { CSE: new Set(), TPE: new Set(), AGRI: new Set() };
+
+                    for (let i = 1; i < lines.length; i++) {
+                        const line = lines[i].trim();
+                        if (!line) continue;
+
+                        const values = line.split(';');
+                        const dept = values[idx['Dpartement']] || values[idx['Departement']] || values[idx['Département']];
+                        if (dept !== deptCode) continue;
+
+                        const type = values[idx['Type']];
+                        if (!data.typeElections[type]) continue;
+
+                        const siret = values[idx['SIRET']];
+                        if (siret) siretByType[type].add(siret);
+
+                        let voixTotales = 0;
+                        syndicats.forEach(sym => {
+                            const mapped = sym === 'CGT-FO' ? 'FO' : sym === 'SOLIDAIRES' ? 'SUD' : sym;
+                            const voix = parseFloat(values[idx[sym]] || 0);
+                            if (voix > 0) {
+                                data.syndicats[mapped].voix += voix;
+                                data.syndicats[mapped].parType[type] += voix;
+                                data.syndicats[mapped].implantation++;
+                                voixTotales += voix;
+                            }
+                        });
+
+                        data.typeElections[type].voix += voixTotales;
                     }
-                    
-                    return deptData;
+
+                    Object.keys(siretByType).forEach(t => {
+                        data.typeElections[t].entreprises = siretByType[t].size;
+                    });
+
+                    const totalVoix = data.typeElections.CSE.voix + data.typeElections.TPE.voix + data.typeElections.AGRI.voix;
+                    if (totalVoix > 0) {
+                        ['CSE','TPE','AGRI'].forEach(t => {
+                            data.typeElections[t].pourcentage = (data.typeElections[t].voix / totalVoix) * 100;
+                        });
+                    }
+
+                    return data;
                 })
                 .catch(error => {
                     console.error('Erreur lors du chargement des données CSV:', error);
