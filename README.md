@@ -161,7 +161,8 @@ Cette vue permet de consulter la liste complète des entreprises et leurs résul
   - Styles intégrés dans les fichiers HTML
 
 - **Données** :
-  - `pv_data.csv` : Données principales des PV
+- `pv_data.csv` : Données principales des PV
+  - La colonne **FD** (après `IDCC`) indique la fédération CGT
 
 ### 6. Maintenance et évolution
 
