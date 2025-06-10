@@ -14,7 +14,8 @@ async function loadData() {
         
         // Charger les données du cycle 4
         const responseCycle4 = await fetch('pv_data.csv');
-        const csvTextCycle4 = await responseCycle4.text();
+        const bufferCycle4 = await responseCycle4.arrayBuffer();
+        const csvTextCycle4 = new TextDecoder('iso-8859-1').decode(bufferCycle4);
         
         // Traiter les données CSV
         dataCycle3 = processCSVDataCycle3(csvTextCycle3);

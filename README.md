@@ -163,6 +163,7 @@ Cette vue permet de consulter la liste complète des entreprises et leurs résul
 - **Données** :
 - `pv_data.csv` : Données principales des PV
   - La colonne **FD** (après `IDCC`) indique la fédération CGT
+  - Le fichier est encodé en **ISO-8859-1**
 
 ### 6. Maintenance et évolution
 

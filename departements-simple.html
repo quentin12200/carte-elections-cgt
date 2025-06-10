@@ -256,9 +256,10 @@
             return fetch('pv_data.csv')
                 .then(response => {
                     if (!response.ok) throw new Error(`Erreur HTTP: ${response.status}`);
-                    return response.text();
+                    return response.arrayBuffer();
                 })
-                .then(csvText => {
+                .then(buffer => {
+                    const csvText = new TextDecoder('iso-8859-1').decode(buffer);
                     csvText = csvText.replace(/\r\n/g, '\n');
                     const lines = csvText.split('\n');
                     const headers = lines[0].split(';');

@@ -6,7 +6,8 @@ async function loadData() {
     try {
         // Charger les données depuis le fichier CSV
         const response = await fetch('pv_data.csv');
-        const csvText = await response.text();
+        const buffer = await response.arrayBuffer();
+        const csvText = new TextDecoder('iso-8859-1').decode(buffer);
         
         // Traiter les données CSV
         allData = processCSVData(csvText);

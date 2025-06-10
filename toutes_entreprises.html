@@ -260,9 +260,10 @@
                     }
                     console.log('Fichier CSV trouvé, statut:', response.status);
                     updateProgressBar(20); // Fichier trouvé
-                    return response.text();
+                    return response.arrayBuffer();
                 })
-                .then(text => {
+                .then(buffer => {
+                    const text = new TextDecoder('iso-8859-1').decode(buffer);
                     console.log('Contenu CSV (premiers 100 caractères):', text.substring(0, 100));
                     updateProgressBar(30); // Contenu récupéré
                 })
