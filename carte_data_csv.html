@@ -420,6 +420,14 @@
                 document.getElementById('progress-cgt-national').style.width = Math.min(pourcentageCGT, 100) + '%';
             }
             
+            // Convertir un code département en valeur numérique pour trier
+            function codeToNumber(code) {
+                if (code === '2A') return 20;
+                if (code === '2B') return 21;
+                const num = parseInt(code, 10);
+                return isNaN(num) ? 999 : num;
+            }
+
             // Fonction pour remplir le menu déroulant des départements
             function remplirMenuDepartements(depts) {
                 const selectDept = document.getElementById('select-departement');
@@ -438,12 +446,6 @@
                 }
                 
                 // Trier les départements par code de manière numérique
-                function codeToNumber(code) {
-                    if (code === '2A') return 20;
-                    if (code === '2B') return 21;
-                    const num = parseInt(code, 10);
-                    return isNaN(num) ? 999 : num;
-                }
                 deptsArray.sort((a, b) => {
                     const numA = codeToNumber(a.code);
                     const numB = codeToNumber(b.code);
