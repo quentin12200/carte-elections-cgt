@@ -273,41 +273,89 @@
                     `;
                 }
                 
-                // Utiliser une approche avec fetch pour charger le CSV
-                fetch('resultats_departements_par_type.csv')
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error(`Erreur HTTP: ${response.status}`);
-                        }
-                        return response.text();
-                    })
-                    .then(csvText => {
-                        // Parser le CSV manuellement
+                // Charger pv_data.csv et la liste des départements
+                Promise.all([
+                    fetch('pv_data.csv').then(r => { if (!r.ok) throw new Error(`Erreur HTTP: ${r.status}`); return r.arrayBuffer(); }),
+                    fetch('assets/france-departements.json').then(r => r.json()).catch(() => null)
+                ])
+                    .then(([buffer, geo]) => {
+                        let csvText = new TextDecoder('iso-8859-1').decode(buffer);
+                        csvText = csvText.replace(/\r\n/g, '\n');
                         const lines = csvText.split('\n');
-                        const headers = lines[0].split(',');
-                        
-                        // Créer un objet pour stocker les données par département
-                        const depts = {};
-                        
-                        // Parser chaque ligne du CSV
-                        for (let i = 1; i < lines.length; i++) {
-                            if (!lines[i].trim()) continue; // Ignorer les lignes vides
-                            
-                            const values = lines[i].split(',');
-                            const dept = {};
-                            
-                            // Associer chaque valeur à son en-tête
-                            for (let j = 0; j < headers.length; j++) {
-                                dept[headers[j]] = values[j];
-                            }
-                            
-                            // Stocker le département dans l'objet
-                            if (dept.code) {
-                                depts[dept.code] = dept;
-                            }
+                        const headers = lines[0].split(';');
+                        const idx = {};
+                        headers.forEach((h, i) => { idx[h.trim()] = i; });
+
+                        const nameMap = {};
+                        if (geo && geo.features) {
+                            geo.features.forEach(f => { nameMap[f.properties.code] = f.properties.nom; });
                         }
-                        
-                        console.log("Données CSV chargées avec succès");
+
+                        const syndicats = ['CGT','CFDT','CGT-FO','CFTC','CFE-CGC','SOLIDAIRES','UNSA','AUTRES'];
+                        const depts = {};
+                        const siretByDeptType = {};
+
+                        for (let i = 1; i < lines.length; i++) {
+                            const line = lines[i].trim();
+                            if (!line) continue;
+
+                            const values = line.split(';');
+                            const deptCode = values[idx['Dpartement']] || values[idx['Departement']] || values[idx['Département']];
+                            if (!deptCode) continue;
+
+                            if (!depts[deptCode]) {
+                                depts[deptCode] = {
+                                    code: deptCode,
+                                    nom: nameMap[deptCode] || `Département ${deptCode}`,
+                                    CSE_inscrits: 0, CSE_votants: 0, CSE_sve: 0,
+                                    TPE_inscrits: 0, TPE_votants: 0, TPE_sve: 0,
+                                    AGRI_inscrits: 0, AGRI_votants: 0, AGRI_sve: 0,
+                                    TOTAL_inscrits: 0, TOTAL_votants: 0, TOTAL_sve: 0
+                                };
+                                syndicats.forEach(s => {
+                                    depts[deptCode][`CSE_${s}`] = 0;
+                                    depts[deptCode][`TPE_${s}`] = 0;
+                                    depts[deptCode][`AGRI_${s}`] = 0;
+                                    depts[deptCode][`TOTAL_${s}`] = 0;
+                                });
+                                siretByDeptType[deptCode] = { CSE: new Set(), TPE: new Set(), AGRI: new Set() };
+                            }
+
+                            const dept = depts[deptCode];
+                            const type = values[idx['Type']];
+                            const inscrits = parseInt(values[idx['Inscrits']] || 0);
+                            const votants = parseInt(values[idx['Votants']] || 0);
+                            const sve = parseInt(values[idx['sve_total']] || 0);
+
+                            if (type && dept[`${type}_inscrits`] !== undefined) {
+                                dept[`${type}_inscrits`] += inscrits;
+                                dept[`${type}_votants`] += votants;
+                                dept[`${type}_sve`] += sve;
+                                const siret = values[idx['SIRET']];
+                                if (siret) siretByDeptType[deptCode][type].add(siret);
+
+                                syndicats.forEach(s => {
+                                    const voix = parseFloat(values[idx[s]] || 0);
+                                    dept[`${type}_${s}`] += voix;
+                                    dept[`TOTAL_${s}`] += voix;
+                                });
+                            }
+
+                            dept.TOTAL_inscrits += inscrits;
+                            dept.TOTAL_votants += votants;
+                            dept.TOTAL_sve += sve;
+                        }
+
+                        // Calculer les pourcentages
+                        Object.keys(depts).forEach(code => {
+                            const dept = depts[code];
+                            syndicats.forEach(s => {
+                                const pctKey = `pourcentage_${s}`;
+                                dept[pctKey] = dept.TOTAL_sve > 0 ? (dept[`TOTAL_${s}`] / dept.TOTAL_sve * 100) : 0;
+                            });
+                        });
+
+                        console.log('Données CSV chargées avec succès');
                         data = depts;
                         departements = depts;
                         
@@ -327,7 +375,7 @@
                                 <div class="col-12">
                                     <div class="alert alert-danger">
                                         <p class="mb-0">Erreur lors du chargement des données: ${error.message}</p>
-                                        <p>Vérifiez que le fichier CSV existe bien à l'emplacement: 'resultats_departements_par_type.csv'</p>
+                                        <p>Vérifiez que le fichier CSV existe bien à l'emplacement: 'pv_data.csv'</p>
                                     </div>
                                 </div>
                             `;
@@ -372,6 +420,14 @@
                 document.getElementById('progress-cgt-national').style.width = Math.min(pourcentageCGT, 100) + '%';
             }
             
+            // Convertir un code département en valeur numérique pour trier
+            function codeToNumber(code) {
+                if (code === '2A') return 20;
+                if (code === '2B') return 21;
+                const num = parseInt(code, 10);
+                return isNaN(num) ? 999 : num;
+            }
+
             // Fonction pour remplir le menu déroulant des départements
             function remplirMenuDepartements(depts) {
                 const selectDept = document.getElementById('select-departement');
@@ -389,15 +445,12 @@
                     });
                 }
                 
-                // Trier les départements par code
+                // Trier les départements par code de manière numérique
                 deptsArray.sort((a, b) => {
-                    // Gérer les cas spéciaux comme 2A, 2B, etc.
-                    if (a.code === b.code) return 0;
-                    if (a.code.startsWith('97') && !b.code.startsWith('97')) return 1;
-                    if (!a.code.startsWith('97') && b.code.startsWith('97')) return -1;
-                    if (a.code === '2A') return b.code === '2B' ? -1 : a.code.localeCompare(b.code);
-                    if (a.code === '2B') return a.code.localeCompare(b.code);
-                    return a.code.localeCompare(b.code);
+                    const numA = codeToNumber(a.code);
+                    const numB = codeToNumber(b.code);
+                    if (numA === numB) return a.code.localeCompare(b.code);
+                    return numA - numB;
                 });
                 
                 // Ajouter les options au menu déroulant
@@ -446,7 +499,12 @@
                 
                 // Trier les départements
                 if (triActif === 'dept') {
-                    deptsFiltered.sort((a, b) => a.code.localeCompare(b.code));
+                    deptsFiltered.sort((a, b) => {
+                        const numA = codeToNumber(a.code);
+                        const numB = codeToNumber(b.code);
+                        if (numA === numB) return a.code.localeCompare(b.code);
+                        return numA - numB;
+                    });
                 } else if (triActif === 'cgt') {
                     deptsFiltered.sort((a, b) => getPourcentageSyndicat(b, 'CGT') - getPourcentageSyndicat(a, 'CGT'));
                 } else if (triActif === 'cfdt') {

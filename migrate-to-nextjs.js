@@ -52,7 +52,6 @@ const copyStaticFiles = () => {
     { source: 'logo-cgt.png', dest: 'public/logo-cgt.png' },
     { source: 'liste_departements.json', dest: 'public/liste_departements.json' },
     { source: 'pv_data.csv', dest: 'public/pv_data.csv' },
-    { source: 'resultats_departements_par_type.csv', dest: 'public/resultats_departements_par_type.csv' },
     { source: 'styles.css', dest: 'public/styles.css' },
   ];
 

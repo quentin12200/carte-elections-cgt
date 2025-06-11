@@ -6,7 +6,8 @@ async function loadData() {
     try {
         // Charger les données depuis le fichier CSV
         const response = await fetch('pv_data.csv');
-        const csvText = await response.text();
+        const buffer = await response.arrayBuffer();
+        const csvText = new TextDecoder('iso-8859-1').decode(buffer);
         
         // Traiter les données CSV
         allData = processCSVData(csvText);
@@ -150,6 +151,7 @@ function processCSVData(csvText) {
                     'CP': rowData['CP'],
                     'Ville': rowData['Ville'],
                     'IDCC': rowData['IDCC'],
+                    'FD': rowData['FD'],
                     'Lib IDCC': rowData['Lib IDCC'],
                     pvs: [],
                     Inscrits: 0,
@@ -169,10 +171,12 @@ function processCSVData(csvText) {
                         // Utiliser la fonction safeNumber définie globalement
             
             // Ajouter ce PV à l'entreprise avec des valeurs numériques sûres
+            const numeroPV = rowData['Numero PV'] || rowData['N°PV'] || rowData['NPV'] || '';
             entreprisesBySiret[siret].pvs.push({
-                'N°PV': rowData['N°PV'],
+                'Numero PV': numeroPV,
                 'Date': rowData['Date'],
                 'Coll': rowData['Coll'],
+                'FD': rowData['FD'],
                 'Inscrits': safeNumber(rowData['Inscrits']),
                 'Votants': safeNumber(rowData['Votants']),
                 'sve_total': safeNumber(rowData['sve_total']),
@@ -204,7 +208,8 @@ function processCSVData(csvText) {
             
             // Vérifier que les valeurs sont des nombres valides
             if (isNaN(inscrits) || isNaN(votants) || isNaN(sve)) {
-                console.warn('Valeurs numériques invalides pour le PV:', rowData['NumPV'], 'SIRET:', siret);
+                const numPV = rowData['Numero PV'] || rowData['N°PV'] || rowData['NPV'] || '';
+                console.warn('Valeurs numériques invalides pour le PV:', numPV, 'SIRET:', siret);
             }
             
             // Additionner les valeurs numériques pour l'entreprise
